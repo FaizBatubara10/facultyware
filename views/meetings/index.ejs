@@ -1,0 +1,82 @@
+<h1>Daftar Meeting</h1>
+
+<div style="margin-bottom:20px;">
+    <a href="/meetings/create">
+        <button>+ Tambah Meeting</button>
+    </a>
+</div>
+
+<div style="margin-bottom:20px;">
+    <input
+        type="text"
+        placeholder="Cari meeting..."
+        style="padding:8px; width:300px;"
+    >
+</div>
+
+<% if (meetings.length === 0) { %>
+
+    <p>Belum ada data meeting.</p>
+
+<% } else { %>
+
+    <% meetings.forEach(meeting => { %>
+
+        <div style="
+            border:1px solid #ccc;
+            padding:15px;
+            margin-bottom:10px;
+            border-radius:8px;
+        ">
+            <h3><%= meeting.title %></h3>
+
+            <p>
+                ID Meeting:
+                <%= meeting.id %>
+            </p>
+
+            <p>
+                Tanggal:
+                <%= meeting.meeting_date ? meeting.meeting_date.toISOString ? meeting.meeting_date.toISOString().slice(0,10) : meeting.meeting_date : '-' %>
+            </p>
+
+            <p>
+                Waktu:
+                <%= meeting.start_time %> - <%= meeting.end_time %>
+            </p>
+
+            <p>
+                Tipe:
+                <%= meeting.meeting_type %>
+            </p>
+
+            <p>
+                Status:
+                <%= meeting.status %>
+            </p>
+
+            <div style="margin-top:10px; display:flex; gap:8px;">
+                <a href="/meetings/<%= meeting.id %>">
+                    <button type="button">Detail</button>
+                </a>
+
+                <a href="/meetings/<%= meeting.id %>/edit">
+                    <button type="button">Edit</button>
+                </a>
+
+                <form
+                    action="/meetings/<%= meeting.id %>/delete"
+                    method="POST"
+                    onsubmit="return confirm('Yakin ingin menghapus meeting ini?')"
+                    style="display:inline;"
+                >
+                    <button type="submit">
+                        Hapus
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    <% }) %>
+
+<% } %>

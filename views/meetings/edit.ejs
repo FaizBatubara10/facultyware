@@ -1,0 +1,67 @@
+<h1>Edit Meeting</h1>
+
+<form action="/meetings/<%= meeting.id %>" method="POST">
+    <div>
+        <label>Judul Meeting</label><br>
+        <input type="text" name="title" value="<%= meeting.title %>" required>
+    </div>
+
+    <br>
+
+    <div>
+        <label>Deskripsi</label><br>
+        <textarea name="description" rows="4"><%= meeting.description || '' %></textarea>
+    </div>
+
+    <br>
+
+    <div>
+        <label>Tanggal Meeting</label><br>
+        <input type="date" name="meeting_date" value="<%= meeting.meeting_date.toISOString ? meeting.meeting_date.toISOString().slice(0,10) : meeting.meeting_date %>" required>
+    </div>
+
+    <br>
+
+    <div>
+        <label>Waktu Mulai</label><br>
+        <input type="time" name="start_time" value="<%= meeting.start_time %>" required>
+    </div>
+
+    <br>
+
+    <div>
+        <label>Waktu Selesai</label><br>
+        <input type="time" name="end_time" value="<%= meeting.end_time %>" required>
+    </div>
+
+    <br>
+
+    <div>
+        <label>Tipe Meeting</label><br>
+        <select name="meeting_type" required>
+            <option value="offline" <%= meeting.meeting_type === 'offline' ? 'selected' : '' %>>Offline</option>
+            <option value="online" <%= meeting.meeting_type === 'online' ? 'selected' : '' %>>Online</option>
+            <option value="hybrid" <%= meeting.meeting_type === 'hybrid' ? 'selected' : '' %>>Hybrid</option>
+        </select>
+    </div>
+
+    <br>
+
+    <div>
+        <label>Status</label><br>
+        <select name="status" required>
+            <option value="draft" <%= meeting.status === 'draft' ? 'selected' : '' %>>Draft</option>
+            <option value="scheduled" <%= meeting.status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
+            <option value="completed" <%= meeting.status === 'completed' ? 'selected' : '' %>>Completed</option>
+            <option value="cancelled" <%= meeting.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+        </select>
+    </div>
+
+    <br>
+
+    <button type="submit">Update Meeting</button>
+</form>
+
+<br>
+
+<a href="/meetings">Kembali ke Daftar Meeting</a>

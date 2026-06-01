@@ -1,0 +1,107 @@
+<h1>Tambah Meeting</h1>
+
+<form action="/meetings" method="POST">
+
+    <div>
+        <label>Judul Meeting</label><br>
+        <input
+            type="text"
+            name="title"
+            required
+        >
+    </div>
+
+    <br>
+
+    <div>
+        <label>Deskripsi</label><br>
+        <textarea
+            name="description"
+            rows="4"
+        ></textarea>
+    </div>
+
+    <br>
+
+    <div>
+        <label>Tanggal Meeting</label><br>
+        <input
+            type="date"
+            name="meeting_date"
+            required
+        >
+    </div>
+
+    <br>
+
+    <div>
+        <label>Waktu Mulai</label><br>
+        <input
+            type="time"
+            name="start_time"
+            required
+        >
+    </div>
+
+    <br>
+
+    <div>
+        <label>Waktu Selesai</label><br>
+        <input
+            type="time"
+            name="end_time"
+            required
+        >
+    </div>
+
+    <br>
+
+    <div>
+        <label>Tipe Meeting</label><br>
+        <select name="meeting_type">
+
+            <option value="offline">
+                Offline
+            </option>
+
+            <option value="online">
+                Online
+            </option>
+
+            <option value="hybrid">
+                Hybrid
+            </option>
+
+        </select>
+    </div>
+
+    <br>
+
+    <div>
+        <label>Status</label><br>
+        <select name="status">
+
+            <option value="draft">
+                Draft
+            </option>
+
+            <option value="scheduled">
+                Scheduled
+            </option>
+
+        </select>
+    </div>
+
+    <br>
+
+    <button type="submit">
+        Simpan Meeting
+    </button>
+
+</form>
+
+<br>
+
+<a href="/meetings">
+    Kembali ke Daftar Meeting
+</a>

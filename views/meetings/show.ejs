@@ -1,0 +1,53 @@
+<h1>Detail Meeting</h1>
+
+<hr>
+
+<p>
+    <strong>ID Meeting:</strong>
+    <%= meeting.id %>
+</p>
+
+<p>
+    <strong>Judul Meeting:</strong>
+    <%= meeting.title %>
+</p>
+
+<p>
+    <strong>Deskripsi:</strong>
+    <%= meeting.description %>
+</p>
+
+<p>
+    <strong>Tanggal:</strong>
+    <%= meeting.meeting_date %>
+</p>
+
+<p>
+    <strong>Waktu Mulai:</strong>
+    <%= meeting.start_time %>
+</p>
+
+<p>
+    <strong>Waktu Selesai:</strong>
+    <%= meeting.end_time %>
+</p>
+
+<p>
+    <strong>Tipe Meeting:</strong>
+    <%= meeting.meeting_type %>
+</p>
+
+<p>
+    <strong>Status:</strong>
+    <%= meeting.status %>
+</p>
+
+<hr>
+
+<a href="/meetings/<%= meeting.id %>/edit">
+    <button>Edit Meeting</button>
+</a>
+
+<a href="/meetings">
+    <button>Kembali</button>
+</a>
