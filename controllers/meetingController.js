@@ -2,6 +2,7 @@ const db = require('../lib/db');
 
 // Menampilkan daftar meeting
 const index = async (req, res, next) => {
+  console.log("🚀 YAY! Berhasil masuk ke Controller Meeting!");
   try {
     const [meetings] = await db.query(`
       SELECT 
@@ -17,9 +18,20 @@ const index = async (req, res, next) => {
       ORDER BY meeting_date DESC, start_time ASC
     `);
 
+    const totalMeetings = meetings.length;
+    const scheduledMeetings = meetings.filter(m => m.status === 'scheduled').length;
+    const completedMeetings = meetings.filter(m => m.status === 'completed').length;
+    const cancelledMeetings = meetings.filter(m => m.status === 'cancelled').length;
+
     res.render('meetings/index', {
-      title: 'Daftar Meeting',
-      meetings
+      title: 'Meeting Dashboard',
+      meetings,
+      stats: {
+        total: totalMeetings,
+        scheduled: scheduledMeetings,
+        completed: completedMeetings,
+        cancelled: cancelledMeetings
+      }
     });
   } catch (err) {
     next(err);
@@ -223,7 +235,7 @@ const update = async (req, res, next) => {
   }
 };
 
-    // Menghapus data meeting dari database
+// Menghapus data meeting dari database
 const destroy = async (req, res, next) => {
   const meetingId = req.params.id;
 

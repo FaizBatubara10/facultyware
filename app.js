@@ -9,7 +9,9 @@ var MySQLStore = require('express-mysql-session')(session);
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 const { notFoundHandler, errorHandler } = require('./middlewares/error');
+const { setCurrentUser } = require('./middlewares/setCurrentUser');
 const meetingsRouter = require("./routes/meetings");
+
 
 var app = express();
 
@@ -29,6 +31,9 @@ const sessionStore = new MySQLStore({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
+  schema: {
+    tableName: 'app_sessions'
+  }
 });
 
 app.use(session({
@@ -41,6 +46,9 @@ app.use(session({
     maxAge: 1000 * 60 * 60 * 24 // 1 day
   }
 }));
+
+// Inject current user into all views
+app.use(setCurrentUser);
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);

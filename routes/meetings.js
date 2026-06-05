@@ -2,13 +2,15 @@ var express = require('express');
 var router = express.Router();
 
 const meetingController = require('../controllers/meetingController');
+const { isAuthenticated } = require('../middlewares/auth');
 
-router.get('/', meetingController.index);
-router.get('/create', meetingController.create);
-router.post('/', meetingController.store);
-router.get('/:id', meetingController.show);
-router.get('/:id/edit', meetingController.edit);
-router.post('/:id', meetingController.update);
-router.post('/:id/delete', meetingController.destroy);
+// Semua rute otomatis diawali dengan /meetings (diatur dari app.js)
+router.get('/', isAuthenticated, meetingController.index);
+router.get('/create', isAuthenticated, meetingController.create);
+router.post('/', isAuthenticated, meetingController.store);
+router.get('/:id', isAuthenticated, meetingController.show);
+router.get('/:id/edit', isAuthenticated, meetingController.edit);
+router.post('/:id/edit', isAuthenticated, meetingController.update); 
+router.post('/:id/delete', isAuthenticated, meetingController.destroy);
 
 module.exports = router;
