@@ -1,86 +1,749 @@
 <%- include('../partials/header') %>
-  <div class="p-4 md:p-6 xl:p-8 bg-[#0c0c0e] min-h-screen text-white">
-    <div class="max-w-screen-2xl mx-auto">
-      
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight text-white opacity-90">Daftar Meeting</h1>
-          <p class="text-zinc-400 text-sm mt-1">Kelola dan lihat seluruh jadwal rapat terdaftar.</p>
-        </div>
-        <div>
-          <a class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600 transition-colors shadow-sm" href="/meetings/create">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
-            + Buat Meeting Baru
-          </a>
-        </div>
+
+<style>
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: rgba(0, 0, 0, 0.65);
+    overflow: hidden;
+  }
+
+  .modal-backdrop.active {
+    display: flex;
+  }
+
+  .meeting-modal {
+    width: 100%;
+    max-width: 620px;
+    max-height: calc(100vh - 48px);
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .meeting-modal-header {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 28px;
+    border-bottom: 1px solid #e5e5e5;
+    background: #ffffff;
+  }
+
+  .meeting-modal-header h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #222;
+  }
+
+  .btn-close-modal {
+    border: none;
+    background: transparent;
+    font-size: 28px;
+    color: #777;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .btn-close-modal:hover {
+    color: #222;
+  }
+
+  .meeting-form {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .meeting-form-body {
+    padding: 24px 28px;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .meeting-form-actions {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    padding: 18px 28px;
+    border-top: 1px solid #e5e5e5;
+    background: #ffffff;
+  }
+
+  .form-group {
+    margin-bottom: 18px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #222;
+  }
+
+  .form-control {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid #d0d0d0;
+    border-radius: 9px;
+    font-size: 14px;
+    color: #222;
+    outline: none;
+    box-sizing: border-box;
+    background-color: #fff;
+  }
+
+  .form-control:focus {
+    border-color: #2f6f4e;
+    box-shadow: 0 0 0 2px rgba(47, 111, 78, 0.12);
+  }
+
+  textarea.form-control {
+    resize: vertical;
+    min-height: 82px;
+  }
+
+  .participant-input-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+  }
+
+  .btn-add-participant {
+    padding: 0 18px;
+    border: 1px solid #d0d0d0;
+    border-radius: 9px;
+    background: #fff;
+    color: #222;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-add-participant:hover {
+    background: #f5f5f5;
+  }
+
+  .participant-list {
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .participant-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 12px;
+    border: 1px solid #e2e2e2;
+    border-radius: 9px;
+    background: #f8f8f8;
+    font-size: 14px;
+  }
+
+  .participant-name {
+    color: #222;
+  }
+
+  .btn-remove-participant {
+    border: none;
+    background: transparent;
+    color: #b42318;
+    font-size: 13px;
+    cursor: pointer;
+  }
+
+  .empty-participant-text {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #777;
+  }
+
+  .btn-cancel {
+    padding: 11px 16px;
+    border: none;
+    background: transparent;
+    color: #555;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-draft {
+    padding: 11px 18px;
+    border: 1px solid #d0d0d0;
+    border-radius: 9px;
+    background: #fff;
+    color: #222;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .btn-submit {
+    padding: 11px 18px;
+    border: none;
+    border-radius: 9px;
+    background: #2f6f4e;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .btn-draft:hover {
+    background: #f5f5f5;
+  }
+
+  .btn-submit:hover {
+    background: #285f43;
+  }
+
+  @media (max-width: 640px) {
+    .modal-backdrop {
+      align-items: flex-start;
+      padding: 16px 12px;
+    }
+
+    .meeting-modal {
+      max-height: calc(100vh - 32px);
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .participant-input-row {
+      grid-template-columns: 1fr;
+    }
+
+    .meeting-form-actions {
+      flex-direction: column-reverse;
+      align-items: stretch;
+      padding: 16px 20px;
+    }
+
+    .btn-cancel,
+    .btn-draft,
+    .btn-submit {
+      width: 100%;
+      text-align: center;
+    }
+  }
+</style>
+
+<div class="min-h-screen bg-[#f7f4ee] text-zinc-900">
+  <div class="max-w-screen-2xl mx-auto px-6 md:px-10 py-8">
+
+    <!-- Header halaman -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+      <div>
+        <h1 class="text-3xl font-black tracking-tight text-zinc-950">
+          Daftar Meeting
+        </h1>
+
+        <p class="text-zinc-500 text-sm mt-1">
+          Kelola dan lihat seluruh jadwal rapat terdaftar.
+        </p>
       </div>
 
-      <div class="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-xs">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-zinc-600">
-            <thead class="bg-zinc-50 text-xs uppercase tracking-wider text-zinc-500 border-b border-zinc-200">
-              <tr>
-                <th class="px-6 py-5 font-bold">Nama Rapat</th>
-                <th class="px-6 py-5 font-bold">Tanggal & Waktu</th>
-                <th class="px-6 py-5 font-bold">Tipe</th>
-                <th class="px-6 py-5 font-bold">Status</th>
-                <th class="px-6 py-5 font-bold text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-zinc-100">
-              <% if (meetings && meetings.length > 0) { %>
-                <% meetings.forEach(meeting => { %>
-                  <tr class="hover:bg-zinc-50 transition-colors">
-                    
-                    <td class="px-6 py-4">
-                      <div class="font-bold text-zinc-900 text-base"><%= meeting.title %></div>
-                      <div class="text-xs text-zinc-400 mt-1 line-clamp-1"><%= meeting.description || 'Tidak ada deskripsi' %></div>
-                    </td>
-                    
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="font-bold text-emerald-600"><%= new Date(meeting.meeting_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) %></div>
-                      <div class="text-xs font-semibold text-zinc-500 mt-1 flex items-center gap-1">
-                        <svg class="w-3 h-3 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                        <%= meeting.start_time.substring(0,5) %> - <%= meeting.end_time.substring(0,5) %>
-                      </div>
-                    </td>
-                    
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span class="capitalize text-xs font-bold text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-md border border-amber-100">
-                        <%= meeting.meeting_type %>
-                      </span>
-                    </td>
-                    
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <span class="capitalize font-bold px-3 py-1.5 rounded-full text-xs border border-zinc-200 bg-white text-zinc-600 shadow-sm">
-                        <%= meeting.status %>
-                      </span>
-                    </td>
-                    
-                    <td class="px-6 py-4 text-right whitespace-nowrap">
-                      <a href="/meetings/<%= meeting.id %>/edit" class="inline-flex items-center justify-center px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-emerald-700 hover:bg-emerald-50 hover:border-emerald-200 transition-colors font-semibold text-xs">
-                        Edit Data
-                      </a>
-                    </td>
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          class="inline-flex items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 transition-colors shadow-sm"
+        >
+          <span>🗓️</span>
+          Semua Rapat
+        </button>
 
-                  </tr>
-                <% }) %>
-              <% } else { %>
-                <tr>
-                  <td colspan="5" class="px-6 py-16 text-center">
-                    <div class="flex flex-col items-center justify-center text-zinc-400">
-                      <svg class="w-12 h-12 mb-3 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                      <p class="font-bold text-lg text-zinc-500">Belum Ada Rapat</p>
-                      <p class="text-sm mt-1">Silakan buat jadwal pertemuan baru terlebih dahulu.</p>
-                    </div>
-                  </td>
-                </tr>
-              <% } %>
-            </tbody>
-          </table>
-        </div>
+        <button
+          type="button"
+          onclick="openCreateMeetingModal()"
+          class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-600 transition-colors shadow-sm"
+        >
+          <span>+</span>
+          Buat Meeting
+        </button>
       </div>
+    </div>
+
+    <!-- Filter visual -->
+    <div class="flex flex-col lg:flex-row gap-3 mb-7">
+      <div class="relative w-full lg:max-w-md">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg">
+          🔍
+        </span>
+
+        <input
+          type="text"
+          placeholder="Cari meeting..."
+          class="w-full rounded-xl border border-zinc-300 bg-white py-3 pl-11 pr-4 text-sm text-zinc-700 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+        >
+      </div>
+
+      <select
+        class="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-800 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+      >
+        <option>Semua Status</option>
+        <option>Draft</option>
+        <option>Scheduled</option>
+        <option>Completed</option>
+        <option>Cancelled</option>
+      </select>
+
+      <select
+        class="rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-800 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100"
+      >
+        <option>Bulan Ini</option>
+        <option>Bulan Depan</option>
+        <option>Semua Bulan</option>
+      </select>
+    </div>
+
+    <!-- List meeting -->
+    <div class="space-y-4">
+
+      <% if (meetings && meetings.length > 0) { %>
+        <% meetings.forEach(meeting => { %>
+
+          <div
+            onclick="window.location.href='/meetings/<%= meeting.id %>'"
+            class="group cursor-pointer rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
+          >
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+
+              <!-- Kiri: tanggal + info meeting -->
+              <div class="flex items-start gap-5 min-w-0">
+
+                <div class="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl
+                  <%= meeting.status === 'completed' ? 'bg-zinc-100' : 'bg-emerald-50' %>"
+                >
+                  <div class="text-xs font-bold uppercase tracking-wide text-zinc-400">
+                    <%= new Date(meeting.meeting_date).toLocaleDateString('id-ID', { month: 'short' }) %>
+                  </div>
+
+                  <div class="text-3xl font-black leading-none
+                    <%= meeting.status === 'completed' ? 'text-zinc-800' : 'text-emerald-700' %>"
+                  >
+                    <%= new Date(meeting.meeting_date).getDate() %>
+                  </div>
+                </div>
+
+                <div class="min-w-0 pt-1">
+                  <h2 class="text-xl font-black text-zinc-950 group-hover:text-emerald-700 transition-colors">
+                    <%= meeting.title %>
+                  </h2>
+
+                  <div class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-zinc-500">
+
+                    <span class="inline-flex items-center gap-1.5">
+                      <span>⏰</span>
+                      <%= meeting.start_time.substring(0,5) %> - <%= meeting.end_time.substring(0,5) %>
+                    </span>
+
+                    <span class="inline-flex items-center gap-1.5">
+                      <span>📍</span>
+                      <%= meeting.meeting_type === 'online' ? 'Online' : meeting.meeting_type === 'hybrid' ? 'Hybrid' : 'Ruang Meeting' %>
+                    </span>
+
+                    <span class="inline-flex items-center gap-1.5">
+                      <span>👥</span>
+                      <%= meeting.participant_count || 0 %> orang
+                    </span>
+
+                    <span class="inline-flex items-center gap-1.5 capitalize">
+                      <span>🏷️</span>
+                      <%= meeting.meeting_type %>
+                    </span>
+
+                  </div>
+
+                  <% if (meeting.description) { %>
+                    <p class="mt-2 text-sm text-zinc-400 line-clamp-1">
+                      <%= meeting.description %>
+                    </p>
+                  <% } %>
+                </div>
+
+              </div>
+
+              <!-- Kanan: status -->
+              <div class="flex shrink-0 items-center gap-3 lg:justify-end">
+
+                <% if (meeting.status === 'scheduled') { %>
+                  <span class="rounded-full bg-emerald-50 px-4 py-1.5 text-xs font-bold text-emerald-700">
+                    Scheduled
+                  </span>
+                <% } else if (meeting.status === 'completed') { %>
+                  <span class="rounded-full bg-zinc-100 px-4 py-1.5 text-xs font-bold text-zinc-600">
+                    Selesai
+                  </span>
+                <% } else if (meeting.status === 'cancelled') { %>
+                  <span class="rounded-full bg-red-50 px-4 py-1.5 text-xs font-bold text-red-600">
+                    Cancelled
+                  </span>
+                <% } else { %>
+                  <span class="rounded-full bg-amber-50 px-4 py-1.5 text-xs font-bold text-amber-700">
+                    Draft
+                  </span>
+                <% } %>
+
+              </div>
+
+            </div>
+          </div>
+
+        <% }) %>
+      <% } else { %>
+
+        <div class="rounded-2xl border border-dashed border-zinc-300 bg-white p-12 text-center shadow-sm">
+          <p class="text-lg font-black text-zinc-700">
+            Belum Ada Meeting
+          </p>
+
+          <p class="mt-1 text-sm text-zinc-400">
+            Silakan buat jadwal meeting baru terlebih dahulu.
+          </p>
+        </div>
+
+      <% } %>
 
     </div>
+
   </div>
+</div>
+
+<div id="createMeetingModal" class="modal-backdrop">
+  <div class="meeting-modal">
+
+    <div class="meeting-modal-header">
+      <h2>Buat Meeting Baru</h2>
+
+      <button
+        type="button"
+        class="btn-close-modal"
+        onclick="closeCreateMeetingModal()"
+      >
+        &times;
+      </button>
+    </div>
+
+    <form action="/meetings" method="POST" class="meeting-form">
+
+  <div class="meeting-form-body">
+
+    <div class="form-group">
+      <label for="title">Judul Meeting *</label>
+
+      <input
+        type="text"
+        id="title"
+        name="title"
+        class="form-control"
+        placeholder="Contoh: Rapat Koordinasi Kurikulum Semester Ganjil"
+        required
+      >
+    </div>
+
+    <div class="form-group">
+      <label for="description">Deskripsi / Agenda</label>
+
+      <textarea
+        id="description"
+        name="description"
+        class="form-control"
+        rows="4"
+        placeholder="Tuliskan agenda atau tujuan rapat..."
+      ></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="meeting_date">Tanggal *</label>
+
+        <input
+          type="date"
+          id="meeting_date"
+          name="meeting_date"
+          class="form-control"
+          onclick="this.showPicker && this.showPicker()"
+          onfocus="this.showPicker && this.showPicker()"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="start_time">Waktu Mulai *</label>
+
+        <input
+          type="time"
+          id="start_time"
+          name="start_time"
+          class="form-control"
+          value="09:00"
+          onclick="this.showPicker && this.showPicker()"
+          onfocus="this.showPicker && this.showPicker()"
+          required
+        >
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="end_time">Waktu Selesai *</label>
+
+        <input
+          type="time"
+          id="end_time"
+          name="end_time"
+          class="form-control"
+          value="11:00"
+          onclick="this.showPicker && this.showPicker()"
+          onfocus="this.showPicker && this.showPicker()"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="location">Lokasi</label>
+
+        <input
+          type="text"
+          id="location"
+          name="location"
+          class="form-control"
+          placeholder="Ruang rapat / Online"
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="meeting_type">Tipe Meeting *</label>
+
+      <select
+        id="meeting_type"
+        name="meeting_type"
+        class="form-control"
+        required
+      >
+        <option value="offline">Tatap Muka</option>
+        <option value="online">Online</option>
+        <option value="hybrid">Hybrid</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="employee_select">Peserta Awal</label>
+
+      <div class="participant-input-row">
+        <select
+          id="employee_select"
+          class="form-control"
+        >
+          <option value="">Pilih peserta...</option>
+
+          <% if (employees && employees.length > 0) { %>
+            <% employees.forEach(function(employee) { %>
+              <option
+                value="<%= employee.id %>"
+                data-name="<%= employee.name %>"
+              >
+                <%= employee.name %>
+                <% if (employee.employee_number) { %>
+                  - <%= employee.employee_number %>
+                <% } %>
+              </option>
+            <% }) %>
+          <% } %>
+        </select>
+
+        <button
+          type="button"
+          class="btn-add-participant"
+          onclick="addParticipant()"
+        >
+          Tambah
+        </button>
+      </div>
+
+      <p id="emptyParticipantText" class="empty-participant-text">
+        Belum ada peserta yang ditambahkan.
+      </p>
+
+      <div id="participantList" class="participant-list"></div>
+
+      <input
+        type="hidden"
+        id="participant_ids"
+        name="participant_ids"
+        value=""
+      >
+    </div>
+
+  </div>
+
+  <div class="meeting-form-actions">
+    <button
+      type="button"
+      class="btn-cancel"
+      onclick="closeCreateMeetingModal()"
+    >
+      Batal
+    </button>
+
+    <button
+      type="submit"
+      name="status"
+      value="draft"
+      class="btn-draft"
+    >
+      Simpan Draft
+    </button>
+
+    <button
+      type="submit"
+      name="status"
+      value="scheduled"
+      class="btn-submit"
+    >
+      Buat & Kirim Undangan
+    </button>
+  </div>
+
+</form>
+  </div>
+</div>
+
+<script>
+  // Array untuk menyimpan id peserta yang dipilih sebelum form dikirim
+  let selectedParticipants = [];
+
+  // Membuka modal create meeting
+  function openCreateMeetingModal() {
+    const modal = document.getElementById('createMeetingModal');
+
+    modal.classList.add('active');
+
+    // Supaya halaman daftar meeting di belakang modal tidak ikut scroll
+    document.body.style.overflow = 'hidden';
+  }
+
+  // Menutup modal create meeting
+  function closeCreateMeetingModal() {
+    const modal = document.getElementById('createMeetingModal');
+
+    modal.classList.remove('active');
+
+    // Mengembalikan scroll halaman seperti semula
+    document.body.style.overflow = '';
+  }
+
+  // Menambahkan peserta ke daftar sementara
+  function addParticipant() {
+    const employeeSelect = document.getElementById('employee_select');
+    const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
+
+    const employeeId = employeeSelect.value;
+    const employeeName = selectedOption.getAttribute('data-name');
+
+    // Validasi jika user belum memilih peserta
+    if (!employeeId) {
+      alert('Silakan pilih peserta terlebih dahulu.');
+      return;
+    }
+
+    // Mencegah peserta yang sama ditambahkan dua kali
+    if (selectedParticipants.includes(employeeId)) {
+      alert('Peserta ini sudah ditambahkan.');
+      return;
+    }
+
+    selectedParticipants.push(employeeId);
+
+    renderParticipantList();
+
+    // Mengembalikan dropdown ke pilihan awal
+    employeeSelect.value = '';
+  }
+
+  // Menghapus peserta dari daftar sementara
+  function removeParticipant(employeeId) {
+    const participantIndex = selectedParticipants.indexOf(employeeId);
+
+    if (participantIndex !== -1) {
+      selectedParticipants.splice(participantIndex, 1);
+    }
+
+    renderParticipantList();
+  }
+
+  // Menampilkan ulang daftar peserta yang sudah dipilih
+  function renderParticipantList() {
+    const participantList = document.getElementById('participantList');
+    const participantIdsInput = document.getElementById('participant_ids');
+    const emptyParticipantText = document.getElementById('emptyParticipantText');
+    const employeeSelect = document.getElementById('employee_select');
+
+    participantList.innerHTML = '';
+
+    if (selectedParticipants.length === 0) {
+      emptyParticipantText.style.display = 'block';
+    } else {
+      emptyParticipantText.style.display = 'none';
+    }
+
+    selectedParticipants.forEach(function(employeeId) {
+      const option = employeeSelect.querySelector('option[value="' + employeeId + '"]');
+      const employeeName = option ? option.getAttribute('data-name') : 'Peserta';
+
+      const participantItem = document.createElement('div');
+      participantItem.className = 'participant-item';
+
+      participantItem.innerHTML =
+        '<span class="participant-name">' + employeeName + '</span>' +
+        '<button type="button" class="btn-remove-participant" onclick="removeParticipant(\'' + employeeId + '\')">Hapus</button>';
+
+      participantList.appendChild(participantItem);
+    });
+
+    // Hidden input ini yang akan dikirim ke controller
+    // Contoh: "1,2,3"
+    participantIdsInput.value = selectedParticipants.join(',');
+  }
+
+  // Menutup modal jika user klik area gelap di luar modal
+  document.getElementById('createMeetingModal').addEventListener('click', function(event) {
+    if (event.target === this) {
+      closeCreateMeetingModal();
+    }
+  });
+
+  // Menutup modal jika user menekan tombol Escape
+  document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+      closeCreateMeetingModal();
+    }
+  });
+</script>
+
 <%- include('../partials/footer') %>

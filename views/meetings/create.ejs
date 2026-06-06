@@ -1,107 +1,505 @@
-<h1>Tambah Meeting</h1>
+<%- include('../partials/header') %>
 
-<form action="/meetings" method="POST">
+<style>
+    body {
+        overflow: hidden;
+    }
 
-    <div>
-        <label>Judul Meeting</label><br>
-        <input
-            type="text"
-            name="title"
-            required
-        >
+    .create-meeting-page {
+        position: fixed;
+        inset: 0;
+        z-index: 999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 24px 16px;
+        background: rgba(0, 0, 0, 0.45);
+        overflow: hidden;
+    }
+
+    .meeting-modal {
+        width: 100%;
+        max-width: 620px;
+        max-height: calc(100vh - 48px);
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .meeting-modal-header {
+        flex-shrink: 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 22px 28px;
+        border-bottom: 1px solid #e5e5e5;
+        background: #ffffff;
+    }
+
+    .meeting-modal-header h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 700;
+        color: #222;
+    }
+
+    .close-link {
+        text-decoration: none;
+        font-size: 24px;
+        color: #777;
+        line-height: 1;
+    }
+
+    .close-link:hover {
+        color: #222;
+    }
+
+    .meeting-form {
+        padding: 24px 28px 28px;
+        overflow-y: auto;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #222;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 14px;
+        border: 1px solid #d0d0d0;
+        border-radius: 9px;
+        font-size: 14px;
+        color: #222;
+        outline: none;
+        box-sizing: border-box;
+        background-color: #fff;
+    }
+
+    .form-control:focus {
+        border-color: #2f6f4e;
+        box-shadow: 0 0 0 2px rgba(47, 111, 78, 0.12);
+    }
+
+    textarea.form-control {
+        resize: vertical;
+        min-height: 82px;
+    }
+
+    .participant-input-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 10px;
+    }
+
+    .btn-add-participant {
+        padding: 0 18px;
+        border: 1px solid #d0d0d0;
+        border-radius: 9px;
+        background: #fff;
+        color: #222;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .btn-add-participant:hover {
+        background: #f5f5f5;
+    }
+
+    .participant-list {
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .participant-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 12px;
+        border: 1px solid #e2e2e2;
+        border-radius: 9px;
+        background: #f8f8f8;
+        font-size: 14px;
+    }
+
+    .participant-name {
+        color: #222;
+    }
+
+    .btn-remove-participant {
+        border: none;
+        background: transparent;
+        color: #b42318;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .empty-participant-text {
+        margin-top: 10px;
+        font-size: 13px;
+        color: #777;
+    }
+
+    .meeting-form-actions {
+        position: sticky;
+        bottom: -28px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        margin-top: 36px;
+        padding: 18px 0 0;
+        background: #ffffff;
+    }
+
+    .btn-cancel {
+        padding: 11px 16px;
+        border: none;
+        background: transparent;
+        color: #555;
+        text-decoration: none;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .btn-draft {
+        padding: 11px 18px;
+        border: 1px solid #d0d0d0;
+        border-radius: 9px;
+        background: #fff;
+        color: #222;
+        font-size: 14px;
+        cursor: pointer;
+    }
+
+    .btn-submit {
+        padding: 11px 18px;
+        border: none;
+        border-radius: 9px;
+        background: #2f6f4e;
+        color: #fff;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-draft:hover {
+        background: #f5f5f5;
+    }
+
+    .btn-submit:hover {
+        background: #285f43;
+    }
+
+    @media (max-width: 640px) {
+        .create-meeting-page {
+            align-items: flex-start;
+            padding: 16px 12px;
+        }
+
+        .meeting-modal {
+            max-height: calc(100vh - 32px);
+        }
+
+        .form-row {
+            grid-template-columns: 1fr;
+        }
+
+        .participant-input-row {
+            grid-template-columns: 1fr;
+        }
+
+        .meeting-form-actions {
+            flex-direction: column-reverse;
+            align-items: stretch;
+            bottom: -28px;
+        }
+
+        .btn-cancel,
+        .btn-draft,
+        .btn-submit {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+
+<div class="create-meeting-page">
+    <div class="meeting-modal">
+
+        <div class="meeting-modal-header">
+            <h1>Buat Meeting Baru</h1>
+
+            <a href="/meetings" class="close-link">
+                &times;
+            </a>
+        </div>
+
+        <form action="/meetings" method="POST" class="meeting-form">
+
+            <div class="form-group">
+                <label for="title">Judul Meeting *</label>
+
+                <input
+                    type="text"
+                    id="title"
+                    name="title"
+                    class="form-control"
+                    placeholder="Contoh: Rapat Koordinasi Kurikulum Semester Ganjil"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="description">Deskripsi / Agenda</label>
+
+                <textarea
+                    id="description"
+                    name="description"
+                    class="form-control"
+                    rows="4"
+                    placeholder="Tuliskan agenda atau tujuan rapat..."
+                ></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="meeting_date">Tanggal *</label>
+
+                    <input
+                        type="date"
+                        id="meeting_date"
+                        name="meeting_date"
+                        class="form-control"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="start_time">Waktu Mulai *</label>
+
+                    <input
+                        type="time"
+                        id="start_time"
+                        name="start_time"
+                        class="form-control"
+                        value="09:00"
+                        required
+                    >
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="end_time">Waktu Selesai *</label>
+
+                    <input
+                        type="time"
+                        id="end_time"
+                        name="end_time"
+                        class="form-control"
+                        value="11:00"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="location">Lokasi</label>
+
+                    <input
+                        type="text"
+                        id="location"
+                        name="location"
+                        class="form-control"
+                        placeholder="Ruang rapat / Online"
+                    >
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="meeting_type">Tipe Meeting *</label>
+
+                <select
+                    id="meeting_type"
+                    name="meeting_type"
+                    class="form-control"
+                    required
+                >
+                    <option value="offline">Tatap Muka</option>
+                    <option value="online">Online</option>
+                    <option value="hybrid">Hybrid</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="employee_select">Peserta Awal</label>
+
+                <div class="participant-input-row">
+                    <select
+                        id="employee_select"
+                        class="form-control"
+                    >
+                        <option value="">Pilih peserta...</option>
+
+                        <% employees.forEach(function(employee) { %>
+                            <option
+                                value="<%= employee.id %>"
+                                data-name="<%= employee.name %>"
+                            >
+                                <%= employee.name %>
+                                <% if (employee.employee_number) { %>
+                                    - <%= employee.employee_number %>
+                                <% } %>
+                            </option>
+                        <% }) %>
+                    </select>
+
+                    <button
+                        type="button"
+                        class="btn-add-participant"
+                        onclick="addParticipant()"
+                    >
+                        Tambah
+                    </button>
+                </div>
+
+                <p id="emptyParticipantText" class="empty-participant-text">
+                    Belum ada peserta yang ditambahkan.
+                </p>
+
+                <div id="participantList" class="participant-list"></div>
+
+                <input
+                    type="hidden"
+                    id="participant_ids"
+                    name="participant_ids"
+                    value=""
+                >
+            </div>
+
+            <div class="meeting-form-actions">
+                <a href="/meetings" class="btn-cancel">
+                    Batal
+                </a>
+
+                <button
+                    type="submit"
+                    name="status"
+                    value="draft"
+                    class="btn-draft"
+                >
+                    Simpan Draft
+                </button>
+
+                <button
+                    type="submit"
+                    name="status"
+                    value="scheduled"
+                    class="btn-submit"
+                >
+                    Buat & Kirim Undangan
+                </button>
+            </div>
+
+        </form>
     </div>
+</div>
 
-    <br>
+<script>
+    // Array untuk menyimpan id peserta yang dipilih sebelum form disubmit
+    const selectedParticipants = [];
 
-    <div>
-        <label>Deskripsi</label><br>
-        <textarea
-            name="description"
-            rows="4"
-        ></textarea>
-    </div>
+    // Fungsi untuk menambahkan peserta ke daftar sementara
+    function addParticipant() {
+        const employeeSelect = document.getElementById('employee_select');
+        const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
 
-    <br>
+        const employeeId = employeeSelect.value;
+        const employeeName = selectedOption.getAttribute('data-name');
 
-    <div>
-        <label>Tanggal Meeting</label><br>
-        <input
-            type="date"
-            name="meeting_date"
-            required
-        >
-    </div>
+        // Validasi jika belum memilih peserta
+        if (!employeeId) {
+            alert('Silakan pilih peserta terlebih dahulu.');
+            return;
+        }
 
-    <br>
+        // Mencegah peserta yang sama ditambahkan dua kali
+        if (selectedParticipants.includes(employeeId)) {
+            alert('Peserta ini sudah ditambahkan.');
+            return;
+        }
 
-    <div>
-        <label>Waktu Mulai</label><br>
-        <input
-            type="time"
-            name="start_time"
-            required
-        >
-    </div>
+        selectedParticipants.push(employeeId);
 
-    <br>
+        renderParticipantList();
 
-    <div>
-        <label>Waktu Selesai</label><br>
-        <input
-            type="time"
-            name="end_time"
-            required
-        >
-    </div>
+        // Mengembalikan dropdown ke pilihan awal
+        employeeSelect.value = '';
+    }
 
-    <br>
+    // Fungsi untuk menghapus peserta dari daftar sementara
+    function removeParticipant(employeeId) {
+        const participantIndex = selectedParticipants.indexOf(employeeId);
 
-    <div>
-        <label>Tipe Meeting</label><br>
-        <select name="meeting_type">
+        if (participantIndex !== -1) {
+            selectedParticipants.splice(participantIndex, 1);
+        }
 
-            <option value="offline">
-                Offline
-            </option>
+        renderParticipantList();
+    }
 
-            <option value="online">
-                Online
-            </option>
+    // Fungsi untuk menampilkan ulang daftar peserta
+    function renderParticipantList() {
+        const participantList = document.getElementById('participantList');
+        const participantIdsInput = document.getElementById('participant_ids');
+        const emptyParticipantText = document.getElementById('emptyParticipantText');
+        const employeeSelect = document.getElementById('employee_select');
 
-            <option value="hybrid">
-                Hybrid
-            </option>
+        participantList.innerHTML = '';
 
-        </select>
-    </div>
+        if (selectedParticipants.length === 0) {
+            emptyParticipantText.style.display = 'block';
+        } else {
+            emptyParticipantText.style.display = 'none';
+        }
 
-    <br>
+        selectedParticipants.forEach(function(employeeId) {
+            const option = employeeSelect.querySelector('option[value="' + employeeId + '"]');
+            const employeeName = option ? option.getAttribute('data-name') : 'Peserta';
 
-    <div>
-        <label>Status</label><br>
-        <select name="status">
+            const participantItem = document.createElement('div');
+            participantItem.className = 'participant-item';
 
-            <option value="draft">
-                Draft
-            </option>
+            participantItem.innerHTML =
+                '<span class="participant-name">' + employeeName + '</span>' +
+                '<button type="button" class="btn-remove-participant" onclick="removeParticipant(\'' + employeeId + '\')">Hapus</button>';
 
-            <option value="scheduled">
-                Scheduled
-            </option>
+            participantList.appendChild(participantItem);
+        });
 
-        </select>
-    </div>
+        // Hidden input ini yang akan dikirim ke controller
+        // Contoh value: "1,2,3"
+        participantIdsInput.value = selectedParticipants.join(',');
+    }
+</script>
 
-    <br>
-
-    <button type="submit">
-        Simpan Meeting
-    </button>
-
-</form>
-
-<br>
-
-<a href="/meetings">
-    Kembali ke Daftar Meeting
-</a>
+<%- include('../partials/footer') %>
