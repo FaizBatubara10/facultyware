@@ -10,9 +10,7 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- FORM UPLOAD                                             -->
-  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- FORM UPLOAD -->
   <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
     <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
       <h2 class="text-base font-semibold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
@@ -27,7 +25,6 @@
     <form action="/meetings/upload-minutes" method="POST" enctype="multipart/form-data" class="p-6 space-y-5">
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-
         <!-- Pilih Rapat -->
         <div class="flex flex-col gap-1.5">
           <label class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
@@ -46,7 +43,7 @@
             <% }) %>
           </select>
         </div>
-
+      </div>
 
       <!-- Catatan / Summary -->
       <div class="flex flex-col gap-1.5">
@@ -66,12 +63,10 @@
 
         <div id="dropZone"
           class="relative border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl px-6 py-8
-                 hover:border-emerald-400 dark:hover:border-emerald-600 transition-all text-center cursor-pointer
-                 group">
+                 hover:border-emerald-400 dark:hover:border-emerald-600 transition-all text-center cursor-pointer group">
 
-          <!-- Icon & teks default -->
           <div id="dropContent">
-            <svg id="dropIcon" class="mx-auto mb-3 w-10 h-10 text-zinc-300 dark:text-zinc-600 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="mx-auto mb-3 w-10 h-10 text-zinc-300 dark:text-zinc-600 group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
@@ -81,23 +76,24 @@
             <p class="text-xs text-zinc-400 dark:text-zinc-500 mt-1.5">PDF, Word (.doc/.docx), JPG, PNG &bull; Maks 10MB</p>
           </div>
 
-          <!-- Preview setelah file dipilih -->
-          <div id="filePreview" class="hidden items-center justify-center gap-3">
+          <div id="filePreview" class="hidden items-center justify-center gap-3" style="position:relative; z-index:2;">
             <div id="fileIcon" class="w-10 h-10 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"></div>
             <div class="text-left">
               <p id="fileName" class="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate max-w-[260px]"></p>
               <p id="fileSize" class="text-xs text-zinc-400 mt-0.5"></p>
             </div>
-            <button type="button" id="clearFile" class="ml-2 text-zinc-400 hover:text-red-500 transition-colors" title="Hapus pilihan">
+            <button type="button" id="clearFile"
+              style="position:relative; z-index:10;"
+              class="ml-2 text-zinc-400 hover:text-red-500 transition-colors" title="Hapus pilihan">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
           </div>
 
-          <!-- Input file tersembunyi -->
           <input type="file" id="fileInput" name="file_notulensi" required
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            style="z-index:1;"
             class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
         </div>
       </div>
@@ -115,9 +111,7 @@
     </form>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <!-- DAFTAR NOTULENSI                                        -->
-  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- DAFTAR NOTULENSI -->
   <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
     <div class="px-6 py-4 border-b border-zinc-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <h2 class="text-base font-semibold text-zinc-800 dark:text-zinc-100 flex items-center gap-2">
@@ -133,7 +127,6 @@
         <% } %>
       </h2>
 
-      <!-- Filter by Rapat -->
       <form method="GET" action="/meetings/upload-minutes">
         <select name="meeting_id" onchange="this.form.submit()"
           class="border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-sm
@@ -173,11 +166,9 @@
           <tbody class="divide-y divide-zinc-100 dark:divide-zinc-800">
             <% minutesList.forEach(m => { %>
             <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors">
-
               <td class="px-6 py-4">
                 <span class="font-medium text-zinc-800 dark:text-zinc-200 line-clamp-1"><%= m.meeting_title %></span>
               </td>
-
               <td class="px-4 py-4">
                 <% if (m.file_path) { %>
                   <a href="<%= m.file_path %>" target="_blank"
@@ -192,7 +183,6 @@
                   <span class="text-xs text-zinc-400">—</span>
                 <% } %>
               </td>
-
               <td class="px-4 py-4 hidden md:table-cell max-w-[200px]">
                 <% if (m.summary) { %>
                   <span class="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2" title="<%= m.summary %>"><%= m.summary %></span>
@@ -200,14 +190,11 @@
                   <span class="text-xs text-zinc-300 dark:text-zinc-600 italic">Tidak ada catatan</span>
                 <% } %>
               </td>
-
               <td class="px-4 py-4 hidden sm:table-cell whitespace-nowrap">
                 <span class="text-xs text-zinc-500 dark:text-zinc-400"><%= m.uploaded_at %></span>
               </td>
-
               <td class="px-4 py-4">
                 <div class="flex items-center justify-center gap-1.5">
-
                   <a href="/meetings/minutes/<%= m.id %>/export-pdf" title="Export PDF"
                     class="inline-flex items-center justify-center w-8 h-8 rounded-lg
                            bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400
@@ -217,7 +204,6 @@
                         d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
                     </svg>
                   </a>
-
                   <button type="button" title="Ganti File" onclick="openReplaceModal('<%= m.id %>')"
                     class="inline-flex items-center justify-center w-8 h-8 rounded-lg
                            bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400
@@ -227,7 +213,6 @@
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
                   </button>
-
                   <form action="/meetings/minutes/<%= m.id %>/delete" method="POST"
                     onsubmit="return confirm('Hapus notulensi ini? File juga akan dihapus permanen.')">
                     <button type="submit" title="Hapus"
@@ -240,7 +225,6 @@
                       </svg>
                     </button>
                   </form>
-
                 </div>
               </td>
             </tr>
@@ -253,9 +237,7 @@
 
 </div>
 
-<!-- ═══════════════════════════════════════════════════════════════════ -->
-<!-- MODAL: Ganti File                                                   -->
-<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MODAL: Ganti File -->
 <div id="replaceModal"
   class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm px-4">
   <div class="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl w-full max-w-md p-6 space-y-4">
@@ -270,13 +252,10 @@
     <p class="text-sm text-zinc-500 dark:text-zinc-400">File lama akan dihapus dan digantikan dengan file baru yang kamu pilih.</p>
 
     <form id="replaceForm" method="POST" enctype="multipart/form-data" class="space-y-4">
-
-      <!-- Drag & Drop di modal juga -->
       <div class="flex flex-col gap-1.5">
         <label class="text-sm font-medium text-zinc-700 dark:text-zinc-300">
           Pilih File Baru <span class="text-red-500">*</span>
         </label>
-
         <div id="replaceDropZone"
           class="relative border-2 border-dashed border-zinc-300 dark:border-zinc-700 rounded-xl px-5 py-6
                  hover:border-amber-400 dark:hover:border-amber-600 transition-all text-center cursor-pointer group">
@@ -292,13 +271,15 @@
             <p class="text-xs text-zinc-400 mt-1">PDF, Word, JPG, PNG &bull; Maks 10MB</p>
           </div>
 
-          <div id="replaceFilePreview" class="hidden items-center justify-center gap-3">
+          <div id="replaceFilePreview" class="hidden items-center justify-center gap-3" style="position:relative; z-index:2;">
             <div id="replaceFileIcon" class="w-9 h-9 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0"></div>
             <div class="text-left">
               <p id="replaceFileName" class="text-sm font-medium text-zinc-800 dark:text-zinc-100 truncate max-w-[200px]"></p>
               <p id="replaceFileSize" class="text-xs text-zinc-400 mt-0.5"></p>
             </div>
-            <button type="button" id="replaceClearFile" class="ml-2 text-zinc-400 hover:text-red-500 transition-colors">
+            <button type="button" id="replaceClearFile"
+              style="position:relative; z-index:10;"
+              class="ml-2 text-zinc-400 hover:text-red-500 transition-colors">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -307,6 +288,7 @@
 
           <input type="file" id="replaceFileInput" name="file_notulensi" required
             accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+            style="z-index:1;"
             class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
         </div>
       </div>
@@ -327,7 +309,6 @@
 </div>
 
 <script>
-  // ── Helpers ──────────────────────────────────────────────
   const EXT_COLORS = {
     pdf:  { bg: '#ef4444', label: 'PDF' },
     doc:  { bg: '#2563eb', label: 'DOC' },
@@ -347,7 +328,7 @@
     return name.split('.').pop().toLowerCase();
   }
 
-  function showFilePreview(file, iconEl, nameEl, sizeEl, dropContent, previewEl) {
+  function showFilePreview(file, iconEl, nameEl, sizeEl, dropContent, previewEl, inputEl) {
     const ext  = getExt(file.name);
     const meta = EXT_COLORS[ext] || { bg: '#6b7280', label: ext.toUpperCase() };
     iconEl.style.backgroundColor = meta.bg;
@@ -357,10 +338,13 @@
     dropContent.classList.add('hidden');
     previewEl.classList.remove('hidden');
     previewEl.classList.add('flex');
+    // Sembunyikan input agar tidak menutupi tombol clear
+    inputEl.style.pointerEvents = 'none';
   }
 
   function resetPreview(inputEl, dropContent, previewEl) {
     inputEl.value = '';
+    inputEl.style.pointerEvents = 'auto';
     previewEl.classList.add('hidden');
     previewEl.classList.remove('flex');
     dropContent.classList.remove('hidden');
@@ -376,18 +360,16 @@
     const size    = document.getElementById(sizeId);
     const clear   = document.getElementById(clearId);
 
-    // File dipilih via klik
     input.addEventListener('change', () => {
-      if (input.files[0]) showFilePreview(input.files[0], icon, name, size, content, preview);
+      if (input.files[0]) showFilePreview(input.files[0], icon, name, size, content, preview, input);
     });
 
-    // Tombol hapus pilihan
     clear.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
       resetPreview(input, content, preview);
     });
 
-    // Drag over — highlight zona
     zone.addEventListener('dragover', (e) => {
       e.preventDefault();
       zone.classList.add(accentClass);
@@ -395,41 +377,26 @@
     zone.addEventListener('dragleave', () => {
       zone.classList.remove(accentClass);
     });
-
-    // Drop file
     zone.addEventListener('drop', (e) => {
       e.preventDefault();
       zone.classList.remove(accentClass);
       const file = e.dataTransfer.files[0];
       if (!file) return;
-
-      // Transfer ke input supaya form bisa submit
       const dt = new DataTransfer();
       dt.items.add(file);
       input.files = dt.files;
-
-      showFilePreview(file, icon, name, size, content, preview);
+      showFilePreview(file, icon, name, size, content, preview, input);
     });
   }
 
-  // ── Init drop zone utama ──────────────────────────────────
-  setupDropZone(
-    'dropZone', 'fileInput', 'dropContent', 'filePreview',
-    'fileIcon', 'fileName', 'fileSize', 'clearFile',
-    'border-emerald-400'
-  );
+  setupDropZone('dropZone', 'fileInput', 'dropContent', 'filePreview',
+    'fileIcon', 'fileName', 'fileSize', 'clearFile', 'border-emerald-400');
 
-  // ── Init drop zone modal ──────────────────────────────────
-  setupDropZone(
-    'replaceDropZone', 'replaceFileInput', 'replaceDropContent', 'replaceFilePreview',
-    'replaceFileIcon', 'replaceFileName', 'replaceFileSize', 'replaceClearFile',
-    'border-amber-400'
-  );
+  setupDropZone('replaceDropZone', 'replaceFileInput', 'replaceDropContent', 'replaceFilePreview',
+    'replaceFileIcon', 'replaceFileName', 'replaceFileSize', 'replaceClearFile', 'border-amber-400');
 
-  // ── Modal helpers ─────────────────────────────────────────
   function openReplaceModal(minuteId) {
     document.getElementById('replaceForm').action = '/meetings/minutes/' + minuteId + '/replace';
-    // Reset preview tiap buka modal
     resetPreview(
       document.getElementById('replaceFileInput'),
       document.getElementById('replaceDropContent'),
