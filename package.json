@@ -20,7 +20,7 @@
     "morgan": "~1.9.1",
     "multer": "^2.1.1",
     "mysql2": "^3.22.3",
-    "pdf-parse": "^2.4.5",
+    "pdf-parse": "^1.1.1",
     "pdfkit": "^0.19.0"
   },
   "devDependencies": {

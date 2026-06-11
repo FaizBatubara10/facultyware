@@ -2,6 +2,8 @@ const db = require('../lib/db');
 const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
+const pdfParse = require('pdf-parse');
+const mammoth  = require('mammoth');
 
 // =========================================================================
 // INDEX — Daftar semua meeting
@@ -238,13 +240,20 @@ const renderUploadMinutesForm = async (req, res, next) => {
   try {
     const selectedMeetingId = req.query.meeting_id || null;
 
-    const [meetingsData] = await db.query(`
+    // Untuk dropdown form upload — rapat yang BELUM punya notulensi
+const [meetingsData] = await db.query(`
   SELECT id, title, meeting_date as date
   FROM meetings
-  WHERE id NOT IN (
-    SELECT meeting_id FROM meeting_minutes
-  )
+  WHERE id NOT IN (SELECT meeting_id FROM meeting_minutes)
   ORDER BY meeting_date DESC
+`);
+
+// Untuk dropdown filter daftar — rapat yang SUDAH punya notulensi
+const [meetingsWithMinutes] = await db.query(`
+  SELECT DISTINCT m.id, m.title, m.meeting_date as date
+  FROM meetings m
+  INNER JOIN meeting_minutes mm ON m.id = mm.meeting_id
+  ORDER BY m.meeting_date DESC
 `);
 
     
@@ -267,6 +276,7 @@ const renderUploadMinutesForm = async (req, res, next) => {
 
     res.render('meetings/upload_minutes', {
       meetings: meetingsData,
+      meetingsWithMinutes: meetingsWithMinutes,
       minutesList: historyData,
       selectedMeetingId: selectedMeetingId
     });
@@ -367,6 +377,8 @@ const replaceMinute = async (req, res, next) => {
 };
 
 // =========================================================================
+/// EXPORT MINUTE PDF — Generate & download PDF notulensi
+// =========================================================================
 // EXPORT MINUTE PDF — Generate & download PDF notulensi
 // =========================================================================
 const exportMinutePdf = async (req, res, next) => {
@@ -394,90 +406,170 @@ const exportMinutePdf = async (req, res, next) => {
       [minuteId]
     );
 
-    const doc = new PDFDocument({ margin: 50 });
+    const doc = new PDFDocument({ margin: 56, size: 'A4' });
     const safeName = minute.meeting_title.replace(/[^a-z0-9]/gi, '_');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="notulensi_${safeName}.pdf"`);
     doc.pipe(res);
 
-    // Header
-    doc.fontSize(18).font('Helvetica-Bold').text('NOTULENSI RAPAT', { align: 'center' });
-    doc.fontSize(11).font('Helvetica').text('FTI Meeting System', { align: 'center' });
+    const W = 595 - 56 * 2; // lebar konten
+    const GRAY = '#6b7280';
+    const DARK = '#111827';
+    const GREEN = '#065f46';
+    const GREEN_LIGHT = '#d1fae5';
+    const LINE = '#e5e7eb';
+
+    // ── Header ────────────────────────────────────────────────────────────
+    // Bar hijau di atas
+    doc.rect(0, 0, 595, 6).fill(GREEN);
+
     doc.moveDown(0.5);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+    doc.fontSize(22).font('Helvetica-Bold').fillColor(DARK)
+      .text('NOTULENSI RAPAT', { align: 'center' });
+    doc.fontSize(10).font('Helvetica').fillColor(GRAY)
+      .text('FTI Meeting System', { align: 'center' });
+    doc.moveDown(0.6);
+
+    // Garis pemisah header
+    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(1.5).strokeColor(GREEN).stroke();
     doc.moveDown(0.8);
 
-    // Info Rapat
-    doc.fontSize(12).font('Helvetica-Bold').text('Informasi Rapat');
-    doc.moveDown(0.3);
+    // ── Box Info Rapat ────────────────────────────────────────────────────
     const meetingDate = new Date(minute.meeting_date).toLocaleDateString('id-ID', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
+
+    // Label section
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(GREEN)
+      .text('INFORMASI RAPAT', 56);
+    doc.moveDown(0.3);
+
+    // Box abu
+    const boxY = doc.y;
     const infoRows = [
       ['Judul Rapat',  minute.meeting_title],
       ['Tanggal',      meetingDate],
-      ['Waktu',        `${minute.start_time} - ${minute.end_time}`],
-      ['Jenis Rapat',  minute.meeting_type],
-      ['Status',       minute.status],
+      ['Waktu',        `${minute.start_time.substring(0,5)} – ${minute.end_time.substring(0,5)}`],
+      ['Jenis Rapat',  minute.meeting_type.charAt(0).toUpperCase() + minute.meeting_type.slice(1)],
+      ['Status',       minute.status.charAt(0).toUpperCase() + minute.status.slice(1)],
     ];
-    doc.font('Helvetica').fontSize(11);
+    const rowH = 20;
+    const boxH = infoRows.length * rowH + 16;
+    doc.rect(56, boxY, W, boxH).fillAndStroke('#f9fafb', LINE);
+
+    let rowY = boxY + 10;
+    doc.font('Helvetica').fontSize(10);
     for (const [label, value] of infoRows) {
-      doc.text(`${label.padEnd(18)}: ${value || '-'}`);
+      doc.fillColor(GRAY).text(label, 68, rowY, { width: 100, lineBreak: false });
+      doc.fillColor(DARK).text(`: ${value || '-'}`, 168, rowY, { width: W - 120, lineBreak: false });
+      rowY += rowH;
     }
 
-    doc.moveDown(0.8);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#cccccc');
-    doc.moveDown(0.8);
+    doc.y = boxY + boxH + 14;
+    doc.moveDown(0.2);
 
-    // Peserta
-    doc.fontSize(12).font('Helvetica-Bold').text('Daftar Peserta');
+    // ── Peserta ───────────────────────────────────────────────────────────
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(GREEN)
+      .text('DAFTAR PESERTA', 56);
     doc.moveDown(0.3);
-    doc.font('Helvetica').fontSize(11);
+
+    doc.font('Helvetica').fontSize(10).fillColor(DARK);
     if (participants.length > 0) {
       participants.forEach((p, i) => {
-        doc.text(`${i + 1}. ${p.name}${p.employee_number ? ' (' + p.employee_number + ')' : ''}`);
+        doc.text(
+          `${i + 1}.  ${p.name}${p.employee_number ? '  (' + p.employee_number + ')' : ''}`,
+          68, doc.y, { lineGap: 3 }
+        );
       });
     } else {
-      doc.text('Tidak ada peserta terdaftar.');
+      doc.fillColor(GRAY).text('Tidak ada peserta terdaftar.', 68);
     }
 
     doc.moveDown(0.8);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#cccccc');
-    doc.moveDown(0.8);
+    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.5).strokeColor(LINE).stroke();
+    doc.moveDown(0.6);
 
-    // Ringkasan
-    doc.fontSize(12).font('Helvetica-Bold').text('Ringkasan / Catatan');
+    // ── Ringkasan ─────────────────────────────────────────────────────────
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(GREEN)
+      .text('RINGKASAN / CATATAN', 56);
     doc.moveDown(0.3);
-    doc.font('Helvetica').fontSize(11);
-    if (minute.summary && minute.summary.trim()) {
-      doc.text(minute.summary, { lineGap: 4 });
+    doc.font('Helvetica').fontSize(10);
+    if (minute.summary && minute.summary.trim() && minute.summary.trim() !== '-') {
+      doc.fillColor(DARK).text(minute.summary, 68, doc.y, { lineGap: 4, width: W - 12 });
     } else {
-      doc.fillColor('#888888').text('Tidak ada catatan yang ditambahkan.').fillColor('#000000');
+      doc.fillColor(GRAY).text('Tidak ada catatan yang ditambahkan.', 68);
     }
 
     doc.moveDown(0.8);
-    doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#cccccc');
-    doc.moveDown(0.8);
+    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.5).strokeColor(LINE).stroke();
+    doc.moveDown(0.6);
 
-    // Lampiran
-    doc.fontSize(12).font('Helvetica-Bold').text('Lampiran File');
+    // ── Isi File ──────────────────────────────────────────────────────────
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(GREEN)
+      .text('ISI FILE NOTULENSI', 56);
     doc.moveDown(0.3);
-    doc.font('Helvetica').fontSize(11);
+
     if (minute.file) {
-      doc.text(`File: ${path.basename(minute.file)}`);
+      const filePath = path.join(__dirname, '..', 'public', minute.file.replace(/^\//, ''));
+      const ext = path.extname(minute.file).toLowerCase();
+
+      try {
+        if (ext === '.pdf') {
+          const fileBuffer = fs.readFileSync(filePath);
+          const pdfData = await (pdfParse.default ? pdfParse.default(fileBuffer) : pdfParse(fileBuffer));
+          const extracted = (pdfData?.text || '').trim();
+          if (extracted) {
+            doc.font('Helvetica').fontSize(9.5).fillColor(DARK)
+              .text(extracted, 68, doc.y, { lineGap: 3, paragraphGap: 5, width: W - 12 });
+          } else {
+            doc.font('Helvetica').fontSize(10).fillColor(GRAY)
+              .text('Tidak ada teks yang dapat diekstrak dari file PDF ini.', 68);
+          }
+
+        } else if (ext === '.docx' || ext === '.doc') {
+          const result = await mammoth.extractRawText({ path: filePath });
+          const extracted = result.value.trim();
+          if (extracted) {
+            doc.font('Helvetica').fontSize(9.5).fillColor(DARK)
+              .text(extracted, 68, doc.y, { lineGap: 3, paragraphGap: 5, width: W - 12 });
+          } else {
+            doc.font('Helvetica').fontSize(10).fillColor(GRAY)
+              .text('Tidak ada teks yang dapat diekstrak dari file Word ini.', 68);
+          }
+
+        } else if (['.jpg', '.jpeg', '.png'].includes(ext)) {
+          doc.image(filePath, 68, doc.y, { fit: [W - 12, 500], align: 'center' });
+
+        } else {
+          doc.font('Helvetica').fontSize(10).fillColor(GRAY)
+            .text('Format file tidak didukung untuk ditampilkan.', 68);
+        }
+      } catch (fileErr) {
+        console.error('Gagal membaca isi file:', fileErr.message);
+        doc.font('Helvetica').fontSize(10).fillColor(GRAY)
+          .text('Gagal membaca isi file: ' + fileErr.message, 68);
+      }
     } else {
-      doc.fillColor('#888888').text('Tidak ada file terlampir.').fillColor('#000000');
+      doc.font('Helvetica').fontSize(10).fillColor(GRAY)
+        .text('Tidak ada file terlampir.', 68);
     }
 
-    doc.moveDown(1.5);
+    doc.moveDown(2);
 
-    // Footer
+    // ── Footer ────────────────────────────────────────────────────────────
     const uploadedAt = new Date(minute.created_at).toLocaleDateString('id-ID', {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
-    doc.fontSize(9).fillColor('#aaaaaa')
-      .text(`Diunggah pada: ${uploadedAt}`, { align: 'right' })
-      .text('Dokumen ini digenerate otomatis oleh FTI Meeting System', { align: 'right' });
+
+    // Garis footer
+    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(1).strokeColor(GREEN).stroke();
+    doc.moveDown(0.4);
+    doc.fontSize(8).fillColor(GRAY)
+      .text(`Diunggah pada: ${uploadedAt}`, 56, doc.y, { align: 'left', continued: true })
+      .text('FTI Meeting System', { align: 'right' });
+
+    // Bar hijau di bawah
+    doc.rect(0, 830, 595, 6).fill(GREEN);
 
     doc.end();
   } catch (err) {

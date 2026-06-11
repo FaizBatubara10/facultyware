@@ -140,7 +140,7 @@
                  bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300
                  focus:outline-none focus:ring-2 focus:ring-emerald-500 transition">
           <option value="">Semua Rapat</option>
-          <% meetings.forEach(m => { %>
+          <% meetingsWithMinutes.forEach(m => { %>
             <option value="<%= m.id %>" <%= selectedMeetingId == m.id ? 'selected' : '' %>>
               <%= m.title %>
             </option>
