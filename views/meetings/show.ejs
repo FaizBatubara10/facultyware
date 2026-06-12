@@ -1,5 +1,88 @@
 <%- include('../partials/header') %>
 
+<%
+  function formatTime(timeValue) {
+    if (!timeValue) {
+      return '-';
+    }
+
+    return String(timeValue).substring(0, 5);
+  }
+
+  function getDateObject(dateValue) {
+    const date = new Date(dateValue);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
+  function formatMeetingDate(dateValue) {
+    const date = getDateObject(dateValue);
+
+    if (!date) {
+      return '-';
+    }
+
+    return date.toLocaleDateString('id-ID', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  }
+
+  function getMeetingMonth(dateValue) {
+    const date = getDateObject(dateValue);
+
+    if (!date) {
+      return '-';
+    }
+
+    return date.toLocaleDateString('id-ID', {
+      month: 'short'
+    });
+  }
+
+  function getMeetingDay(dateValue) {
+    const date = getDateObject(dateValue);
+
+    if (!date) {
+      return '-';
+    }
+
+    return date.getDate();
+  }
+
+  function getStatusLabel(status) {
+    if (status === 'scheduled') return 'Scheduled';
+    if (status === 'completed') return 'Completed';
+    if (status === 'cancelled') return 'Cancelled';
+    return 'Draft';
+  }
+
+  function getMeetingTypeLabel(type) {
+    if (type === 'online') return 'Online';
+    if (type === 'hybrid') return 'Hybrid';
+    return 'Tatap Muka';
+  }
+
+  function getStatusClass(status) {
+    if (status === 'scheduled') {
+      return 'bg-emerald-50 text-emerald-700';
+    }
+
+    if (status === 'completed') {
+      return 'bg-zinc-100 text-zinc-700';
+    }
+
+    if (status === 'cancelled') {
+      return 'bg-red-50 text-red-700';
+    }
+
+    return 'bg-amber-50 text-amber-700';
+  }
+
+  const meetingStartTime = formatTime(meeting.start_time);
+  const meetingEndTime = formatTime(meeting.end_time);
+%>
+
 <div class="p-4 md:p-6 xl:p-8 bg-[#0c0c0e] min-h-screen text-white">
   <div class="max-w-5xl mx-auto">
 
@@ -54,12 +137,12 @@
 
           <div>
             <div class="flex flex-wrap items-center gap-2 mb-3">
-              <span class="capitalize px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-                <%= meeting.status %>
+              <span class="capitalize px-3 py-1 rounded-full <%= getStatusClass(meeting.status) %> text-xs font-semibold">
+                <%= getStatusLabel(meeting.status) %>
               </span>
 
               <span class="capitalize px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
-                <%= meeting.meeting_type %>
+                <%= getMeetingTypeLabel(meeting.meeting_type) %>
               </span>
             </div>
 
@@ -74,11 +157,11 @@
 
           <div class="w-20 h-20 rounded-2xl bg-emerald-50 flex flex-col items-center justify-center shrink-0">
             <div class="text-xs font-bold text-zinc-400 uppercase">
-              <%= new Date(meeting.meeting_date).toLocaleDateString('id-ID', { month: 'short' }) %>
+              <%= getMeetingMonth(meeting.meeting_date) %>
             </div>
 
             <div class="text-3xl font-black text-emerald-700 leading-none">
-              <%= new Date(meeting.meeting_date).getDate() %>
+              <%= getMeetingDay(meeting.meeting_date) %>
             </div>
           </div>
 
@@ -94,7 +177,7 @@
             </p>
 
             <p class="font-bold text-zinc-900">
-              <%= new Date(meeting.meeting_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) %>
+              <%= formatMeetingDate(meeting.meeting_date) %>
             </p>
           </div>
 
@@ -104,7 +187,7 @@
             </p>
 
             <p class="font-bold text-zinc-900">
-              <%= meeting.start_time.substring(0,5) %>
+              <%= meetingStartTime %>
             </p>
           </div>
 
@@ -114,7 +197,7 @@
             </p>
 
             <p class="font-bold text-zinc-900">
-              <%= meeting.end_time.substring(0,5) %>
+              <%= meetingEndTime %>
             </p>
           </div>
 
@@ -124,10 +207,36 @@
             </p>
 
             <p class="capitalize font-bold text-zinc-900">
-              <%= meeting.meeting_type %>
+              <%= getMeetingTypeLabel(meeting.meeting_type) %>
             </p>
           </div>
 
+        </div>
+
+        <div class="mt-4 rounded-xl border border-zinc-200 p-4 bg-zinc-50">
+          <p class="text-xs font-bold text-zinc-400 uppercase mb-1">
+            Lokasi / Link Meeting
+          </p>
+
+          <% if (meeting.online_link) { %>
+            <% if (String(meeting.online_link).startsWith('http')) { %>
+              <a
+                href="<%= meeting.online_link %>"
+                target="_blank"
+                class="font-bold text-emerald-700 hover:text-emerald-600 break-all"
+              >
+                <%= meeting.online_link %>
+              </a>
+            <% } else { %>
+              <p class="font-bold text-zinc-900 break-all">
+                <%= meeting.online_link %>
+              </p>
+            <% } %>
+          <% } else { %>
+            <p class="font-bold text-zinc-900">
+              -
+            </p>
+          <% } %>
         </div>
       </div>
 
@@ -150,16 +259,16 @@
 
         <% if (participants && participants.length > 0) { %>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <% participants.forEach(participant => { %>
+            <% participants.forEach(function(participant) { %>
               <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 bg-white">
 
-                <div class="flex items-center gap-3">
-                  <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm">
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
                     <%= participant.name ? participant.name.substring(0, 1).toUpperCase() : '?' %>
                   </div>
 
-                  <div>
-                    <p class="font-bold text-zinc-900">
+                  <div class="min-w-0">
+                    <p class="font-bold text-zinc-900 truncate">
                       <%= participant.name %>
                     </p>
 
@@ -169,7 +278,7 @@
                   </div>
                 </div>
 
-                <span class="capitalize px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
+                <span class="capitalize px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold shrink-0">
                   <%= participant.status %>
                 </span>
 
