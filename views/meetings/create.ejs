@@ -352,6 +352,50 @@
         background: #285f43;
     }
 
+
+
+    .external-participant-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr auto;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .external-participant-list {
+        margin-top: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .external-participant-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 9px 12px;
+        border: 1px solid #e2e2e2;
+        border-radius: 9px;
+        background: #f8f8f8;
+        font-size: 14px;
+        color: #222222;
+        gap: 12px;
+    }
+
+    .external-participant-info {
+        min-width: 0;
+    }
+
+    .external-participant-name {
+        font-weight: 700;
+        color: #222222;
+    }
+
+    .external-participant-detail {
+        margin-top: 2px;
+        font-size: 12px;
+        color: #777777;
+    }
+
     @media (max-width: 640px) {
         .create-meeting-page {
             align-items: flex-start;
@@ -374,7 +418,8 @@
             display: none;
         }
 
-        .participant-input-row {
+        .participant-input-row,
+        .external-participant-grid {
             grid-template-columns: 1fr;
         }
 
@@ -524,6 +569,7 @@
                                     <option
                                         value="<%= employee.id %>"
                                         data-name="<%= employee.name %>"
+                                        data-number="<%= employee.employee_number || '' %>"
                                     >
                                         <%= employee.name %>
                                         <% if (employee.employee_number) { %>
@@ -554,6 +600,54 @@
                         id="participant_ids"
                         name="participant_ids"
                         value=""
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Peserta Eksternal</label>
+
+                    <div class="external-participant-grid">
+                        <input
+                            type="text"
+                            id="external_name"
+                            class="form-control"
+                            placeholder="Nama peserta eksternal"
+                        >
+
+                        <input
+                            type="text"
+                            id="external_institution"
+                            class="form-control"
+                            placeholder="Instansi"
+                        >
+
+                        <input
+                            type="email"
+                            id="external_email"
+                            class="form-control"
+                            placeholder="Email"
+                        >
+
+                        <button
+                            type="button"
+                            class="btn-add-participant"
+                            onclick="addExternalParticipant()"
+                        >
+                            Tambah
+                        </button>
+                    </div>
+
+                    <p id="emptyExternalParticipantText" class="empty-participant-text">
+                        Belum ada peserta eksternal yang ditambahkan.
+                    </p>
+
+                    <div id="externalParticipantList" class="external-participant-list"></div>
+
+                    <input
+                        type="hidden"
+                        id="external_participants"
+                        name="external_participants"
+                        value="[]"
                     >
                 </div>
             </div>
@@ -609,7 +703,7 @@
 
 <script>
     // =========================================================
-    // PESERTA MEETING
+    // PESERTA MEETING INTERNAL
     // =========================================================
 
     const selectedParticipants = [];
@@ -683,7 +777,6 @@
         });
 
         participantIdsInput.value = selectedParticipants.join(',');
-
         updateParticipantDropdown();
     }
 
@@ -709,7 +802,89 @@
         });
     }
 
-    renderParticipantList();
+    // =========================================================
+    // PESERTA EKSTERNAL
+    // =========================================================
+
+    const selectedExternalParticipants = [];
+
+    function addExternalParticipant() {
+        const nameInput = document.getElementById('external_name');
+        const institutionInput = document.getElementById('external_institution');
+        const emailInput = document.getElementById('external_email');
+
+        const name = nameInput.value.trim();
+        const institution = institutionInput.value.trim();
+        const email = emailInput.value.trim();
+
+        if (!name) {
+            alert('Nama peserta eksternal wajib diisi.');
+            return;
+        }
+
+        const alreadySelected = selectedExternalParticipants.some(function(participant) {
+            return participant.name.toLowerCase() === name.toLowerCase() &&
+                String(participant.email || '').toLowerCase() === email.toLowerCase();
+        });
+
+        if (alreadySelected) {
+            alert('Peserta eksternal ini sudah ditambahkan.');
+            return;
+        }
+
+        selectedExternalParticipants.push({
+            name: name,
+            institution: institution,
+            email: email,
+            status: 'invited'
+        });
+
+        nameInput.value = '';
+        institutionInput.value = '';
+        emailInput.value = '';
+
+        renderExternalParticipantList();
+    }
+
+    function removeExternalParticipant(index) {
+        selectedExternalParticipants.splice(index, 1);
+        renderExternalParticipantList();
+    }
+
+    function renderExternalParticipantList() {
+        const externalParticipantList = document.getElementById('externalParticipantList');
+        const externalParticipantsInput = document.getElementById('external_participants');
+        const emptyExternalParticipantText = document.getElementById('emptyExternalParticipantText');
+
+        externalParticipantList.innerHTML = '';
+        emptyExternalParticipantText.style.display = selectedExternalParticipants.length === 0 ? 'block' : 'none';
+
+        selectedExternalParticipants.forEach(function(participant, index) {
+            const participantItem = document.createElement('div');
+            participantItem.className = 'external-participant-item';
+
+            const detailParts = [];
+
+            if (participant.institution) {
+                detailParts.push(participant.institution);
+            }
+
+            if (participant.email) {
+                detailParts.push(participant.email);
+            }
+
+            participantItem.innerHTML =
+                '<div class="external-participant-info">' +
+                    '<div class="external-participant-name">' + participant.name + '</div>' +
+                    '<div class="external-participant-detail">' + (detailParts.join(' • ') || 'Peserta eksternal') + '</div>' +
+                '</div>' +
+                '<button type="button" class="btn-remove-participant" onclick="removeExternalParticipant(' + index + ')">Hapus</button>';
+
+            externalParticipantList.appendChild(participantItem);
+        });
+
+        externalParticipantsInput.value = JSON.stringify(selectedExternalParticipants);
+    }
 
     // =========================================================
     // CUSTOM TIME PICKER
@@ -974,6 +1149,8 @@
         });
     }
 
+    renderParticipantList();
+    renderExternalParticipantList();
     initializeTimePicker();
 </script>
 

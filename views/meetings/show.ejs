@@ -57,6 +57,14 @@
     return 'Draft';
   }
 
+  function getParticipantStatusLabel(status) {
+    if (status === 'confirmed') return 'Confirmed';
+    if (status === 'declined') return 'Declined';
+    if (status === 'attended') return 'Attended';
+    if (status === 'absent') return 'Absent';
+    return 'Invited';
+  }
+
   function getMeetingTypeLabel(type) {
     if (type === 'online') return 'Online';
     if (type === 'hybrid') return 'Hybrid';
@@ -79,8 +87,27 @@
     return 'bg-amber-50 text-amber-700';
   }
 
+  function getParticipantBadgeClass(status) {
+    if (status === 'attended') {
+      return 'bg-emerald-50 text-emerald-700';
+    }
+
+    if (status === 'absent' || status === 'declined') {
+      return 'bg-red-50 text-red-700';
+    }
+
+    if (status === 'confirmed') {
+      return 'bg-blue-50 text-blue-700';
+    }
+
+    return 'bg-amber-50 text-amber-700';
+  }
+
   const meetingStartTime = formatTime(meeting.start_time);
   const meetingEndTime = formatTime(meeting.end_time);
+  const externalParticipantList = typeof externalParticipants !== 'undefined' && externalParticipants
+    ? externalParticipants
+    : [];
 %>
 
 <div class="p-4 md:p-6 xl:p-8 bg-[#0c0c0e] min-h-screen text-white">
@@ -108,7 +135,14 @@
       </div>
 
       <% if (typeof isHost !== 'undefined' && isHost) { %>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
+          <a
+            href="/meetings/<%= meeting.id %>/export-attendance"
+            class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-zinc-700 text-white hover:bg-zinc-600 font-semibold text-sm transition-colors"
+          >
+            Export Daftar Hadir
+          </a>
+
           <a
             href="/meetings/<%= meeting.id %>/edit"
             class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 font-semibold text-sm transition-colors"
@@ -246,11 +280,11 @@
         <div class="flex items-center justify-between gap-4 mb-4">
           <div>
             <h3 class="text-lg font-bold text-zinc-900">
-              Peserta Meeting
+              Peserta Internal
             </h3>
 
             <p class="text-sm text-zinc-500 mt-1">
-              Daftar peserta yang terdaftar dalam meeting ini.
+              Daftar pegawai internal yang diundang ke meeting ini.
             </p>
           </div>
 
@@ -280,8 +314,8 @@
                   </div>
                 </div>
 
-                <span class="capitalize px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold shrink-0">
-                  <%= participant.status %>
+                <span class="capitalize px-2.5 py-1 rounded-full <%= getParticipantBadgeClass(participant.status) %> text-xs font-semibold shrink-0">
+                  <%= getParticipantStatusLabel(participant.status) %>
                 </span>
 
               </div>
@@ -290,11 +324,72 @@
         <% } else { %>
           <div class="rounded-xl border border-dashed border-zinc-300 p-8 text-center">
             <p class="text-zinc-500 font-semibold">
-              Belum ada peserta yang ditambahkan.
+              Belum ada peserta internal yang ditambahkan.
             </p>
 
             <p class="text-sm text-zinc-400 mt-1">
-              Peserta dapat ditambahkan melalui halaman edit meeting.
+              Peserta internal dapat ditambahkan melalui halaman edit meeting.
+            </p>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="p-6 border-t border-zinc-200">
+        <div class="flex items-center justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-lg font-bold text-zinc-900">
+              Peserta Eksternal
+            </h3>
+
+            <p class="text-sm text-zinc-500 mt-1">
+              Daftar peserta luar yang dicatat oleh host dan tidak memiliki akun login.
+            </p>
+          </div>
+
+          <span class="px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-xs font-semibold">
+            <%= externalParticipantList.length %> peserta
+          </span>
+        </div>
+
+        <% if (externalParticipantList.length > 0) { %>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <% externalParticipantList.forEach(function(participant) { %>
+              <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 bg-white">
+
+                <div class="flex items-center gap-3 min-w-0">
+                  <div class="w-10 h-10 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center font-bold text-sm shrink-0">
+                    <%= participant.name ? participant.name.substring(0, 1).toUpperCase() : '?' %>
+                  </div>
+
+                  <div class="min-w-0">
+                    <p class="font-bold text-zinc-900 truncate">
+                      <%= participant.name %>
+                    </p>
+
+                    <p class="text-xs text-zinc-400 truncate">
+                      <%= participant.institution || 'Instansi tidak dicantumkan' %>
+                      <% if (participant.email) { %>
+                        • <%= participant.email %>
+                      <% } %>
+                    </p>
+                  </div>
+                </div>
+
+                <span class="capitalize px-2.5 py-1 rounded-full <%= getParticipantBadgeClass(participant.status) %> text-xs font-semibold shrink-0">
+                  <%= getParticipantStatusLabel(participant.status) %>
+                </span>
+
+              </div>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <div class="rounded-xl border border-dashed border-zinc-300 p-8 text-center">
+            <p class="text-zinc-500 font-semibold">
+              Belum ada peserta eksternal yang ditambahkan.
+            </p>
+
+            <p class="text-sm text-zinc-400 mt-1">
+              Peserta eksternal dapat ditambahkan melalui halaman edit meeting.
             </p>
           </div>
         <% } %>

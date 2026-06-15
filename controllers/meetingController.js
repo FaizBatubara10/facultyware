@@ -67,6 +67,99 @@ const cleanParticipantIds = async (participantIds, organizerId) => {
   return rows.map((row) => Number(row.id));
 };
 
+
+const parseExternalParticipants = (externalParticipantsValue) => {
+  if (!externalParticipantsValue) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(externalParticipantsValue);
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    return parsed;
+  } catch (error) {
+    return [];
+  }
+};
+
+const cleanExternalParticipants = (externalParticipantsValue) => {
+  const parsedExternalParticipants = parseExternalParticipants(externalParticipantsValue);
+  const uniqueMap = new Map();
+
+  parsedExternalParticipants.forEach((participant) => {
+    const name = String(participant.name || '').trim();
+    const institution = String(participant.institution || '').trim();
+    const email = String(participant.email || '').trim();
+    const status = ['invited', 'attended', 'absent'].includes(participant.status)
+      ? participant.status
+      : 'invited';
+
+    if (!name) {
+      return;
+    }
+
+    const uniqueKey = `${name.toLowerCase()}|${email.toLowerCase()}|${institution.toLowerCase()}`;
+
+    if (!uniqueMap.has(uniqueKey)) {
+      uniqueMap.set(uniqueKey, {
+        name,
+        institution: institution || null,
+        email: email || null,
+        status
+      });
+    }
+  });
+
+  return Array.from(uniqueMap.values());
+};
+
+const saveExternalParticipants = async (meetingId, externalParticipants) => {
+  for (const participant of externalParticipants) {
+    await db.query(
+      `INSERT INTO meeting_external_participants
+        (
+          meeting_id,
+          name,
+          institution,
+          email,
+          status,
+          created_at,
+          updated_at
+        )
+       VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
+      [
+        meetingId,
+        participant.name,
+        participant.institution,
+        participant.email,
+        participant.status || 'invited'
+      ]
+    );
+  }
+};
+
+const getExternalParticipantsByMeetingId = async (meetingId) => {
+  const [externalParticipants] = await db.query(
+    `SELECT
+        id,
+        meeting_id,
+        name,
+        institution,
+        email,
+        status
+     FROM meeting_external_participants
+     WHERE meeting_id = ?
+     ORDER BY name ASC`,
+    [meetingId]
+  );
+
+  return externalParticipants;
+};
+
 const isEndTimeValid = (startTime, endTime) => {
   if (!startTime || !endTime) {
     return false;
@@ -330,6 +423,7 @@ const store = async (req, res, next) => {
     meeting_type,
     status,
     participant_ids,
+    external_participants,
     online_link
   } = req.body;
 
@@ -362,6 +456,7 @@ const store = async (req, res, next) => {
       - hanya employee aktif
     */
     const participants = await cleanParticipantIds(participant_ids, organizerId);
+    const externalParticipants = cleanExternalParticipants(external_participants);
 
     const [result] = await db.query(
       `INSERT INTO meetings
@@ -416,6 +511,8 @@ const store = async (req, res, next) => {
         [meetingId, employeeId]
       );
     }
+
+    await saveExternalParticipants(meetingId, externalParticipants);
 
     res.redirect('/meetings');
   } catch (err) {
@@ -475,6 +572,8 @@ const show = async (req, res, next) => {
       [meetingId, meeting.organizer_id]
     );
 
+    const externalParticipants = await getExternalParticipantsByMeetingId(meetingId);
+
     /*
       isHost dikirim ke view agar tombol Edit/Hapus
       hanya muncul untuk user yang merupakan host meeting ini.
@@ -488,6 +587,7 @@ const show = async (req, res, next) => {
       title: 'Detail Meeting',
       meeting,
       participants,
+      externalParticipants,
       isHost
     });
   } catch (err) {
@@ -563,11 +663,14 @@ const edit = async (req, res, next) => {
       number: participant.employee_number || ''
     }));
 
+    const selectedExternalParticipantsData = await getExternalParticipantsByMeetingId(meetingId);
+
     res.render('meetings/edit', {
       title: 'Edit Meeting',
       meeting,
       employees,
-      selectedParticipantsData
+      selectedParticipantsData,
+      selectedExternalParticipantsData
     });
   } catch (err) {
     next(err);
@@ -590,6 +693,7 @@ const update = async (req, res, next) => {
     meeting_type,
     status,
     participant_ids,
+    external_participants,
     online_link
   } = req.body;
 
@@ -613,6 +717,7 @@ const update = async (req, res, next) => {
       currentEmployee.id adalah host meeting.
     */
     const participants = await cleanParticipantIds(participant_ids, currentEmployee.id);
+    const externalParticipants = cleanExternalParticipants(external_participants);
 
     await db.query(
       `UPDATE meetings
@@ -644,6 +749,11 @@ const update = async (req, res, next) => {
       [meetingId]
     );
 
+    await db.query(
+      `DELETE FROM meeting_external_participants WHERE meeting_id = ?`,
+      [meetingId]
+    );
+
     for (const employeeId of participants) {
       await db.query(
         `INSERT INTO meeting_participants
@@ -658,6 +768,8 @@ const update = async (req, res, next) => {
         [meetingId, employeeId]
       );
     }
+
+    await saveExternalParticipants(meetingId, externalParticipants);
 
     res.redirect(`/meetings/${meetingId}`);
   } catch (err) {
@@ -680,6 +792,11 @@ const destroy = async (req, res, next) => {
 
     await db.query(
       `DELETE FROM meeting_minutes WHERE meeting_id = ?`,
+      [meetingId]
+    );
+
+    await db.query(
+      `DELETE FROM meeting_external_participants WHERE meeting_id = ?`,
       [meetingId]
     );
 
@@ -1139,6 +1256,198 @@ const exportMinutePdf = async (req, res, next) => {
   }
 };
 
+
+// =========================================================================
+// EXPORT ATTENDANCE PDF — Generate PDF daftar hadir peserta meeting
+// =========================================================================
+
+const exportAttendancePdf = async (req, res, next) => {
+  const meetingId = req.params.id;
+
+  try {
+    const [meetingRows] = await db.query(
+      `SELECT
+          m.id,
+          m.title,
+          m.description,
+          m.meeting_type,
+          m.meeting_date,
+          m.start_time,
+          m.end_time,
+          m.online_link,
+          m.status,
+          m.organizer_id,
+          e.name AS organizer_name,
+          e.employee_number AS organizer_number
+       FROM meetings m
+       JOIN employees e ON m.organizer_id = e.id
+       WHERE m.id = ?`,
+      [meetingId]
+    );
+
+    if (meetingRows.length === 0) {
+      return res.status(404).send('Meeting tidak ditemukan.');
+    }
+
+    const meeting = meetingRows[0];
+
+    const [internalParticipants] = await db.query(
+      `SELECT
+          e.name,
+          e.employee_number,
+          mp.status
+       FROM meeting_participants mp
+       JOIN employees e ON mp.employee_id = e.id
+       WHERE mp.meeting_id = ?
+         AND mp.employee_id <> ?
+       ORDER BY e.name ASC`,
+      [meetingId, meeting.organizer_id]
+    );
+
+    const externalParticipants = await getExternalParticipantsByMeetingId(meetingId);
+
+    const statusLabelMap = {
+      invited: 'Diundang',
+      confirmed: 'Konfirmasi Hadir',
+      declined: 'Berhalangan',
+      attended: 'Hadir',
+      absent: 'Tidak Hadir'
+    };
+
+    const doc = new PDFDocument({
+      margin: 56,
+      size: 'A4'
+    });
+
+    const safeName = String(meeting.title || 'meeting').replace(/[^a-z0-9]/gi, '_');
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="daftar_hadir_${safeName}.pdf"`);
+
+    doc.pipe(res);
+
+    const green = '#065f46';
+    const dark = '#111827';
+    const gray = '#6b7280';
+    const line = '#e5e7eb';
+    const contentWidth = 595 - 56 * 2;
+
+    doc.rect(0, 0, 595, 6).fill(green);
+    doc.moveDown(0.5);
+
+    doc
+      .fontSize(21)
+      .font('Helvetica-Bold')
+      .fillColor(dark)
+      .text('DAFTAR HADIR PESERTA MEETING', { align: 'center' });
+
+    doc
+      .fontSize(10)
+      .font('Helvetica')
+      .fillColor(gray)
+      .text('FTI Meeting System', { align: 'center' });
+
+    doc.moveDown(0.8);
+    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(1.3).strokeColor(green).stroke();
+    doc.moveDown(0.8);
+
+    const meetingDate = new Date(meeting.meeting_date).toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
+    const infoRows = [
+      ['Judul Meeting', meeting.title],
+      ['Tanggal', meetingDate],
+      ['Waktu', `${formatTimeValue(meeting.start_time)} - ${formatTimeValue(meeting.end_time)}`],
+      ['Tipe', meeting.meeting_type],
+      ['Status', meeting.status],
+      ['Host', `${meeting.organizer_name}${meeting.organizer_number ? ' (' + meeting.organizer_number + ')' : ''}`]
+    ];
+
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('INFORMASI MEETING');
+    doc.moveDown(0.3);
+
+    const boxY = doc.y;
+    const rowHeight = 19;
+    const boxHeight = infoRows.length * rowHeight + 14;
+
+    doc.rect(56, boxY, contentWidth, boxHeight).fillAndStroke('#f9fafb', line);
+
+    let rowY = boxY + 9;
+    doc.font('Helvetica').fontSize(10);
+
+    for (const [label, value] of infoRows) {
+      doc.fillColor(gray).text(label, 68, rowY, { width: 110, lineBreak: false });
+      doc.fillColor(dark).text(`: ${value || '-'}`, 188, rowY, { width: contentWidth - 135, lineBreak: false });
+      rowY += rowHeight;
+    }
+
+    doc.y = boxY + boxHeight + 18;
+
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('HOST MEETING');
+    doc.moveDown(0.3);
+    doc.font('Helvetica').fontSize(10).fillColor(dark)
+      .text(`1. ${meeting.organizer_name}${meeting.organizer_number ? ' (' + meeting.organizer_number + ')' : ''} - Host`);
+
+    doc.moveDown(0.8);
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('PESERTA INTERNAL');
+    doc.moveDown(0.3);
+    doc.font('Helvetica').fontSize(10).fillColor(dark);
+
+    if (internalParticipants.length > 0) {
+      internalParticipants.forEach((participant, index) => {
+        const statusText = statusLabelMap[participant.status] || participant.status || '-';
+        const numberText = participant.employee_number ? ` (${participant.employee_number})` : '';
+        doc.text(`${index + 1}. ${participant.name}${numberText} - ${statusText}`, { lineGap: 3 });
+      });
+    } else {
+      doc.fillColor(gray).text('Tidak ada peserta internal tambahan.');
+    }
+
+    doc.moveDown(0.8);
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('PESERTA EKSTERNAL');
+    doc.moveDown(0.3);
+    doc.font('Helvetica').fontSize(10).fillColor(dark);
+
+    if (externalParticipants.length > 0) {
+      externalParticipants.forEach((participant, index) => {
+        const statusText = statusLabelMap[participant.status] || participant.status || '-';
+        const institutionText = participant.institution ? ` - ${participant.institution}` : '';
+        const emailText = participant.email ? ` (${participant.email})` : '';
+        doc.text(`${index + 1}. ${participant.name}${institutionText}${emailText} - ${statusText}`, { lineGap: 3 });
+      });
+    } else {
+      doc.fillColor(gray).text('Tidak ada peserta eksternal.');
+    }
+
+    doc.moveDown(1.2);
+    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.8).strokeColor(line).stroke();
+    doc.moveDown(0.5);
+
+    const exportedAt = new Date().toLocaleString('id-ID', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    doc
+      .fontSize(8)
+      .fillColor(gray)
+      .text(`Dicetak pada: ${exportedAt}`, 56, doc.y, { align: 'left', continued: true })
+      .text('FTI Meeting System', { align: 'right' });
+
+    doc.rect(0, 830, 595, 6).fill(green);
+    doc.end();
+  } catch (err) {
+    next(err);
+  }
+};
+
 // =========================================================================
 // EXPORTS
 // =========================================================================
@@ -1151,6 +1460,7 @@ module.exports = {
   edit,
   update,
   destroy,
+  exportAttendancePdf,
   renderUploadMinutesForm,
   processUploadMinutes,
   deleteMinute,
