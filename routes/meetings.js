@@ -4,7 +4,7 @@ var router = express.Router();
 const meetingController = require('../controllers/meetingController');
 const minuteController = require('../controllers/minuteController');
 const { isAuthenticated } = require('../middlewares/auth');
-const { isEmployee, isHost } = require('../middlewares/meetingAccess');
+const { isEmployee, canAccessMeeting, isHost } = require('../middlewares/meetingAccess');
 const upload = require('../middlewares/upload');
 
 // ── Rute Utama Meeting ──────────────────────────────────────────────────────
@@ -28,7 +28,8 @@ router.post('/minutes/:id/replace', isAuthenticated, upload.single('file_notulen
 router.get('/minutes/:id/export-pdf', isAuthenticated, minuteController.exportMinutePdf);
 
 // ── Rute Detail Meeting ─────────────────────────────────────────────────────
-router.get('/:id', isAuthenticated, meetingController.show);
+// Detail meeting hanya untuk host atau peserta internal yang diundang
+router.get('/:id', isAuthenticated, canAccessMeeting, meetingController.show);
 
 // ── Rute Edit / Update / Hapus — hanya untuk host ──────────────────────────
 router.get('/:id/edit', isAuthenticated, isHost, meetingController.edit);

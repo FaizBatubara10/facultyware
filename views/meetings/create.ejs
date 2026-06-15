@@ -619,12 +619,13 @@
         const selectedOption = employeeSelect.options[employeeSelect.selectedIndex];
 
         const employeeId = employeeSelect.value;
-        const employeeName = selectedOption.getAttribute('data-name');
 
         if (!employeeId) {
             alert('Silakan pilih peserta terlebih dahulu.');
             return;
         }
+
+        const employeeName = selectedOption.getAttribute('data-name');
 
         if (selectedParticipants.includes(employeeId)) {
             alert('Peserta ini sudah ditambahkan.');
@@ -632,9 +633,8 @@
         }
 
         selectedParticipants.push(employeeId);
-        renderParticipantList();
-
         employeeSelect.value = '';
+        renderParticipantList();
     }
 
     function removeParticipant(employeeId) {
@@ -683,7 +683,33 @@
         });
 
         participantIdsInput.value = selectedParticipants.join(',');
+
+        updateParticipantDropdown();
     }
+
+    function updateParticipantDropdown() {
+        const employeeSelect = document.getElementById('employee_select');
+
+        if (!employeeSelect) {
+            return;
+        }
+
+        Array.from(employeeSelect.options).forEach(function(option) {
+            if (!option.value) {
+                return;
+            }
+
+            if (selectedParticipants.includes(String(option.value))) {
+                option.disabled = true;
+                option.hidden = true;
+            } else {
+                option.disabled = false;
+                option.hidden = false;
+            }
+        });
+    }
+
+    renderParticipantList();
 
     // =========================================================
     // CUSTOM TIME PICKER

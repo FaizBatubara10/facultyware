@@ -43,6 +43,7 @@ const loginPage = (req, res) => {
   if (req.session.userId) {
     return res.redirect("/home");
   }
+
   res.render("login", { title: "Login", error: null });
 };
 
@@ -71,9 +72,36 @@ const login = async (req, res, next) => {
       });
     }
 
+    /*
+      Konsep final FTI Meeting:
+      yang boleh login ke sistem adalah akun user yang terhubung
+      dengan data employee. External participant tidak login.
+    */
+    const [employeeRows] = await db.query(
+      `
+        SELECT id, name, employee_number
+        FROM employees
+        WHERE id = ?
+          AND status = 'active'
+        LIMIT 1
+      `,
+      [user.id]
+    );
+
+    if (employeeRows.length === 0) {
+      return res.render("login", {
+        title: "Login",
+        error: "Akun ini belum terhubung dengan data pegawai sehingga tidak dapat masuk ke sistem FTI Meeting.",
+      });
+    }
+
+    const employee = employeeRows[0];
+
     // Set session
     req.session.userId = user.id;
     req.session.username = user.email;
+    req.session.employeeId = employee.id;
+    req.session.employeeName = employee.name;
 
     res.redirect("/home");
   } catch (err) {

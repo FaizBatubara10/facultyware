@@ -36,6 +36,37 @@ const parseParticipantIds = (participantIds) => {
     .filter((id) => !isNaN(id));
 };
 
+/*
+  Membersihkan daftar peserta sebelum disimpan:
+  1. Menghapus id duplikat
+  2. Menghapus host dari daftar peserta
+  3. Memastikan id peserta benar-benar employee aktif
+*/
+const cleanParticipantIds = async (participantIds, organizerId) => {
+  const parsedIds = parseParticipantIds(participantIds);
+
+  const uniqueIds = [...new Set(parsedIds)]
+    .filter((id) => Number(id) !== Number(organizerId));
+
+  if (uniqueIds.length === 0) {
+    return [];
+  }
+
+  const placeholders = uniqueIds.map(() => '?').join(',');
+
+  const [rows] = await db.query(
+    `
+      SELECT id
+      FROM employees
+      WHERE status = 'active'
+        AND id IN (${placeholders})
+    `,
+    uniqueIds
+  );
+
+  return rows.map((row) => Number(row.id));
+};
+
 const isEndTimeValid = (startTime, endTime) => {
   if (!startTime || !endTime) {
     return false;
@@ -44,38 +75,165 @@ const isEndTimeValid = (startTime, endTime) => {
   return endTime > startTime;
 };
 
+
+const getPagination = (queryPage, totalItems, limit = 5) => {
+  const totalPages = Math.max(Math.ceil(totalItems / limit), 1);
+  let page = parseInt(queryPage, 10);
+
+  if (isNaN(page) || page < 1) {
+    page = 1;
+  }
+
+  if (page > totalPages) {
+    page = totalPages;
+  }
+
+  return {
+    page,
+    limit,
+    offset: (page - 1) * limit,
+    totalItems,
+    totalPages
+  };
+};
+
+const getMonthRange = (monthFilter) => {
+  const today = new Date();
+  let startDate = null;
+  let endDate = null;
+
+  if (monthFilter === 'this_month') {
+    startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+    endDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+  }
+
+  if (monthFilter === 'next_month') {
+    startDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    endDate = new Date(today.getFullYear(), today.getMonth() + 2, 1);
+  }
+
+  if (!startDate || !endDate) {
+    return null;
+  }
+
+  const toSqlDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
+  };
+
+  return {
+    start: toSqlDate(startDate),
+    end: toSqlDate(endDate)
+  };
+};
+
 // =========================================================================
-// INDEX — Menampilkan daftar meeting
+// INDEX — Menampilkan daftar meeting + search database + pagination
 // =========================================================================
 
 const index = async (req, res, next) => {
   try {
-    const [meetings] = await db.query(`
-      SELECT 
-        m.id,
-        m.title,
-        m.description,
-        m.meeting_type,
-        m.meeting_date,
-        m.start_time,
-        m.end_time,
-        m.status,
-        m.organizer_id,
-        COUNT(mp.id) AS participant_count
-      FROM meetings m
-      LEFT JOIN meeting_participants mp ON m.id = mp.meeting_id
-      GROUP BY 
-        m.id,
-        m.title,
-        m.description,
-        m.meeting_type,
-        m.meeting_date,
-        m.start_time,
-        m.end_time,
-        m.status,
-        m.organizer_id
-      ORDER BY m.meeting_date ASC, m.start_time ASC
-    `);
+    const currentEmployee = await getCurrentEmployee(req.session.userId);
+    const canCreateMeeting = !!currentEmployee;
+
+    const searchKeyword = String(req.query.q || '').trim();
+    const selectedStatus = String(req.query.status || 'all');
+    const selectedMonth = String(req.query.month || 'all');
+    const allowedStatuses = ['draft', 'scheduled', 'completed', 'cancelled'];
+
+    let meetings = [];
+    let totalFilteredMeetings = 0;
+    let pagination = getPagination(req.query.page, 0, 5);
+
+    if (currentEmployee) {
+      const whereParts = [
+        `(m.organizer_id = ? OR mp_access.employee_id IS NOT NULL)`
+      ];
+      const params = [currentEmployee.id, currentEmployee.id];
+
+      if (searchKeyword) {
+        whereParts.push(`(
+          m.title LIKE ?
+          OR m.description LIKE ?
+          OR m.meeting_type LIKE ?
+          OR m.status LIKE ?
+        )`);
+
+        const keywordParam = `%${searchKeyword}%`;
+        params.push(keywordParam, keywordParam, keywordParam, keywordParam);
+      }
+
+      if (allowedStatuses.includes(selectedStatus)) {
+        whereParts.push(`m.status = ?`);
+        params.push(selectedStatus);
+      }
+
+      const monthRange = getMonthRange(selectedMonth);
+
+      if (monthRange) {
+        whereParts.push(`m.meeting_date >= ? AND m.meeting_date < ?`);
+        params.push(monthRange.start, monthRange.end);
+      }
+
+      const whereSql = whereParts.join(' AND ');
+
+      const [countRows] = await db.query(
+        `
+          SELECT COUNT(DISTINCT m.id) AS total
+          FROM meetings m
+          LEFT JOIN meeting_participants mp_access
+            ON m.id = mp_access.meeting_id
+            AND mp_access.employee_id = ?
+          WHERE ${whereSql}
+        `,
+        params
+      );
+
+      totalFilteredMeetings = countRows[0].total || 0;
+      pagination = getPagination(req.query.page, totalFilteredMeetings, 5);
+
+      const [meetingRows] = await db.query(
+        `
+          SELECT 
+            m.id,
+            m.title,
+            m.description,
+            m.meeting_type,
+            m.meeting_date,
+            m.start_time,
+            m.end_time,
+            m.status,
+            m.organizer_id,
+            COUNT(DISTINCT mp_count.id) AS participant_count
+          FROM meetings m
+          LEFT JOIN meeting_participants mp_count
+            ON m.id = mp_count.meeting_id
+            AND mp_count.employee_id <> m.organizer_id
+          LEFT JOIN meeting_participants mp_access
+            ON m.id = mp_access.meeting_id
+            AND mp_access.employee_id = ?
+          WHERE ${whereSql}
+          GROUP BY 
+            m.id,
+            m.title,
+            m.description,
+            m.meeting_type,
+            m.meeting_date,
+            m.start_time,
+            m.end_time,
+            m.status,
+            m.organizer_id
+          ORDER BY m.meeting_date ASC, m.start_time ASC
+          LIMIT ? OFFSET ?
+        `,
+        [...params, pagination.limit, pagination.offset]
+      );
+
+      meetings = meetingRows;
+    }
 
     const [employees] = await db.query(`
       SELECT id, name, employee_number
@@ -84,15 +242,15 @@ const index = async (req, res, next) => {
       ORDER BY name ASC
     `);
 
-    const currentEmployee = await getCurrentEmployee(req.session.userId);
-    const canCreateMeeting = !!currentEmployee;
+    const accessMessageMap = {
+      employee_required: 'Akun ini tidak memiliki data pegawai sehingga tidak dapat membuat meeting.',
+      meeting_denied: 'Akun ini tidak memiliki akses untuk membuka meeting tersebut.',
+      host_required: 'Hanya host meeting yang dapat mengedit atau menghapus meeting.'
+    };
 
-    const accessMessage =
-      req.query.access_error === 'employee_required'
-        ? 'Akun ini tidak memiliki data pegawai sehingga tidak dapat membuat meeting.'
-        : null;
+    const accessMessage = accessMessageMap[req.query.access_error] || null;
 
-    const totalMeetings = meetings.length;
+    const totalMeetings = totalFilteredMeetings;
     const scheduledMeetings = meetings.filter((m) => m.status === 'scheduled').length;
     const completedMeetings = meetings.filter((m) => m.status === 'completed').length;
     const cancelledMeetings = meetings.filter((m) => m.status === 'cancelled').length;
@@ -103,6 +261,12 @@ const index = async (req, res, next) => {
       employees,
       canCreateMeeting,
       accessMessage,
+      filters: {
+        q: searchKeyword,
+        status: selectedStatus,
+        month: selectedMonth
+      },
+      pagination,
       stats: {
         total: totalMeetings,
         scheduled: scheduledMeetings,
@@ -121,16 +285,31 @@ const index = async (req, res, next) => {
 
 const create = async (req, res, next) => {
   try {
-    const [employees] = await db.query(`
-      SELECT id, name, employee_number
-      FROM employees
-      WHERE status = 'active'
-      ORDER BY name ASC
-    `);
+    const currentEmployee = req.currentEmployee || await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.redirect('/meetings?access_error=employee_required');
+    }
+
+    /*
+      Host tidak ditampilkan di dropdown peserta,
+      karena host otomatis menjadi pembuat/penanggung jawab meeting.
+    */
+    const [employees] = await db.query(
+      `
+        SELECT id, name, employee_number
+        FROM employees
+        WHERE status = 'active'
+          AND id <> ?
+        ORDER BY name ASC
+      `,
+      [currentEmployee.id]
+    );
 
     res.render('meetings/create', {
       title: 'Tambah Meeting',
-      employees
+      employees,
+      currentEmployee
     });
   } catch (err) {
     next(err);
@@ -163,21 +342,26 @@ const store = async (req, res, next) => {
       return res.send('Waktu selesai harus lebih besar dari waktu mulai.');
     }
 
-    const participants = parseParticipantIds(participant_ids);
-
-    /*
-      organizer_id diambil dari user yang sedang login.
-      Karena dalam konsep project ini tidak ada aktor leader terpisah,
-      leader_id disamakan dengan organizer_id agar database tetap konsisten.
-    */
     const currentEmployee = req.currentEmployee || await getCurrentEmployee(req.session.userId);
 
     if (!currentEmployee) {
       return res.redirect('/meetings?access_error=employee_required');
     }
 
-    const organizerId = req.session.userId;
-    const leaderId = req.session.userId;
+    /*
+      organizer_id dan leader_id memakai employee id,
+      bukan asal user biasa.
+    */
+    const organizerId = currentEmployee.id;
+    const leaderId = currentEmployee.id;
+
+    /*
+      Bersihkan peserta:
+      - tidak boleh dobel
+      - host tidak ikut masuk meeting_participants
+      - hanya employee aktif
+    */
+    const participants = await cleanParticipantIds(participant_ids, organizerId);
 
     const [result] = await db.query(
       `INSERT INTO meetings
@@ -270,6 +454,11 @@ const show = async (req, res, next) => {
 
     const meeting = rows[0];
 
+    /*
+      Host tidak ditampilkan sebagai peserta.
+      Kalau ada data lama yang telanjur menyimpan host di meeting_participants,
+      tetap disembunyikan di halaman detail.
+    */
     const [participants] = await db.query(
       `SELECT 
           mp.id,
@@ -281,8 +470,9 @@ const show = async (req, res, next) => {
        FROM meeting_participants mp
        JOIN employees e ON mp.employee_id = e.id
        WHERE mp.meeting_id = ?
+         AND mp.employee_id <> ?
        ORDER BY e.name ASC`,
-      [meetingId]
+      [meetingId, meeting.organizer_id]
     );
 
     /*
@@ -336,13 +526,24 @@ const edit = async (req, res, next) => {
 
     const meeting = rows[0];
 
-    const [employees] = await db.query(`
-      SELECT id, name, employee_number
-      FROM employees
-      WHERE status = 'active'
-      ORDER BY name ASC
-    `);
+    /*
+      Host tidak muncul di dropdown peserta saat edit.
+    */
+    const [employees] = await db.query(
+      `
+        SELECT id, name, employee_number
+        FROM employees
+        WHERE status = 'active'
+          AND id <> ?
+        ORDER BY name ASC
+      `,
+      [meeting.organizer_id]
+    );
 
+    /*
+      Peserta yang sudah tersimpan akan langsung masuk selectedParticipantsData.
+      Host tetap dikeluarkan jika ada data lama yang telanjur tersimpan.
+    */
     const [selectedParticipants] = await db.query(
       `SELECT 
           mp.employee_id,
@@ -351,8 +552,9 @@ const edit = async (req, res, next) => {
        FROM meeting_participants mp
        JOIN employees e ON mp.employee_id = e.id
        WHERE mp.meeting_id = ?
+         AND mp.employee_id <> ?
        ORDER BY e.name ASC`,
-      [meetingId]
+      [meetingId, meeting.organizer_id]
     );
 
     const selectedParticipantsData = selectedParticipants.map((participant) => ({
@@ -400,7 +602,17 @@ const update = async (req, res, next) => {
       return res.send('Waktu selesai harus lebih besar dari waktu mulai.');
     }
 
-    const participants = parseParticipantIds(participant_ids);
+    const currentEmployee = req.currentEmployee || await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.redirect('/meetings?access_error=employee_required');
+    }
+
+    /*
+      Karena route update sudah memakai isHost,
+      currentEmployee.id adalah host meeting.
+    */
+    const participants = await cleanParticipantIds(participant_ids, currentEmployee.id);
 
     await db.query(
       `UPDATE meetings
@@ -553,7 +765,7 @@ const renderUploadMinutesForm = async (req, res, next) => {
 const processUploadMinutes = async (req, res, next) => {
   try {
     const meetingId = req.body.meeting_id;
-      const summaryText = req.body.notes || '';
+    const summaryText = req.body.notes || '';
     const uploadedFile = req.file;
 
     if (!meetingId) {
