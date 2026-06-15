@@ -107,27 +107,29 @@
         </p>
       </div>
 
-      <div class="flex gap-2">
-        <a
-          href="/meetings/<%= meeting.id %>/edit"
-          class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 font-semibold text-sm transition-colors"
-        >
-          Edit
-        </a>
-
-        <form
-          action="/meetings/<%= meeting.id %>/delete"
-          method="POST"
-          onsubmit="return confirm('Yakin ingin menghapus meeting ini?')"
-        >
-          <button
-            type="submit"
-            class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 font-semibold text-sm transition-colors"
+      <% if (typeof isHost !== 'undefined' && isHost) { %>
+        <div class="flex gap-2">
+          <a
+            href="/meetings/<%= meeting.id %>/edit"
+            class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 font-semibold text-sm transition-colors"
           >
-            Hapus
-          </button>
-        </form>
-      </div>
+            Edit
+          </a>
+
+          <form
+            action="/meetings/<%= meeting.id %>/delete"
+            method="POST"
+            onsubmit="return confirm('Yakin ingin menghapus meeting ini?')"
+          >
+            <button
+              type="submit"
+              class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 font-semibold text-sm transition-colors"
+            >
+              Hapus
+            </button>
+          </form>
+        </div>
+      <% } %>
     </div>
 
     <div class="bg-white text-zinc-900 rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
