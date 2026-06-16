@@ -27,8 +27,11 @@ router.post('/minutes/:id/replace', isAuthenticated, upload.single('file_notulen
 // Export notulensi sebagai PDF
 router.get('/minutes/:id/export-pdf', isAuthenticated, minuteController.exportMinutePdf);
 
-// Export daftar hadir peserta meeting — hanya host
+// Export daftar hadir peserta meeting — sementara belum dipakai di halaman detail
 router.get('/:id/export-attendance', isAuthenticated, isHost, meetingController.exportAttendancePdf);
+
+// Update kehadiran peserta — hanya host dan hanya setelah meeting completed
+router.post('/:id/attendance', isAuthenticated, isHost, meetingController.updateAttendance);
 
 // ── Rute Detail Meeting ─────────────────────────────────────────────────────
 // Detail meeting hanya untuk host atau peserta internal yang diundang

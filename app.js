@@ -12,6 +12,7 @@ var apiRouter = require('./routes/api');
 const { notFoundHandler, errorHandler } = require('./middlewares/error');
 const { setCurrentUser } = require('./middlewares/setCurrentUser');
 const meetingsRouter = require("./routes/meetings");
+const invitationsRouter = require("./routes/invitations");
 
 
 var app = express();
@@ -54,6 +55,7 @@ app.use(setCurrentUser);
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use("/meetings", meetingsRouter);
+app.use("/invitations", invitationsRouter);
 app.use("/api", apiRouter);
 
 // catch 404 and forward to error handler

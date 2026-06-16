@@ -612,6 +612,19 @@ const show = async (req, res, next) => {
 
     const externalParticipants = await getExternalParticipantsByMeetingId(meetingId);
 
+    const [minutes] = await db.query(
+      `SELECT
+          id,
+          meeting_id,
+          file AS file_path,
+          summary,
+          DATE_FORMAT(created_at, '%d-%m-%Y %H:%i') AS uploaded_at
+       FROM meeting_minutes
+       WHERE meeting_id = ?
+       ORDER BY created_at DESC`,
+      [meetingId]
+    );
+
     /*
       isHost dikirim ke view agar tombol Edit/Hapus
       hanya muncul untuk user yang merupakan host meeting ini.
@@ -626,7 +639,8 @@ const show = async (req, res, next) => {
       && meeting.status === 'completed';
 
     const accessMessageMap = {
-      meeting_locked: 'Meeting yang sudah completed atau cancelled tidak dapat diedit lagi.'
+      meeting_locked: 'Meeting yang sudah completed atau cancelled tidak dapat diedit lagi.',
+      attendance_unavailable: 'Kehadiran baru dapat diubah setelah meeting berstatus completed.'
     };
 
     const accessMessage = accessMessageMap[req.query.access_error] || null;
@@ -636,6 +650,7 @@ const show = async (req, res, next) => {
       meeting,
       participants,
       externalParticipants,
+      minutes,
       isHost,
       canEditAttendance,
       accessMessage
@@ -845,6 +860,92 @@ const update = async (req, res, next) => {
     await saveExternalParticipants(meetingId, externalParticipants);
 
     res.redirect(`/meetings/${meetingId}`);
+  } catch (err) {
+    next(err);
+  }
+};
+
+
+// =========================================================================
+// UPDATE ATTENDANCE — Mengubah status kehadiran peserta
+// =========================================================================
+
+const updateAttendance = async (req, res, next) => {
+  const meetingId = req.params.id;
+
+  try {
+    await syncMeetingStatuses();
+
+    const currentEmployee = req.currentEmployee || await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.redirect('/meetings?access_error=employee_required');
+    }
+
+    const [meetingRows] = await db.query(
+      `SELECT
+          id,
+          organizer_id,
+          status,
+          TIMESTAMP(meeting_date, start_time) <= NOW() AS has_started
+       FROM meetings
+       WHERE id = ?`,
+      [meetingId]
+    );
+
+    if (meetingRows.length === 0) {
+      return res.status(404).send('Meeting tidak ditemukan.');
+    }
+
+    const meeting = meetingRows[0];
+    const isHost = Number(meeting.organizer_id) === Number(currentEmployee.id);
+
+    if (!isHost) {
+      return res.redirect('/meetings?access_error=host_required');
+    }
+
+    if (meeting.status !== 'completed' || Number(meeting.has_started) !== 1) {
+      return res.redirect(`/meetings/${meetingId}?access_error=attendance_unavailable`);
+    }
+
+    const allowedAttendanceStatuses = ['attended', 'absent'];
+    const updates = Object.entries(req.body || {});
+
+    for (const [fieldName, value] of updates) {
+      if (!allowedAttendanceStatuses.includes(value)) {
+        continue;
+      }
+
+      if (fieldName.startsWith('internal_status_')) {
+        const participantId = parseInt(fieldName.replace('internal_status_', ''), 10);
+
+        if (!isNaN(participantId)) {
+          await db.query(
+            `UPDATE meeting_participants
+             SET status = ?, updated_at = NOW()
+             WHERE id = ?
+               AND meeting_id = ?`,
+            [value, participantId, meetingId]
+          );
+        }
+      }
+
+      if (fieldName.startsWith('external_status_')) {
+        const participantId = parseInt(fieldName.replace('external_status_', ''), 10);
+
+        if (!isNaN(participantId)) {
+          await db.query(
+            `UPDATE meeting_external_participants
+             SET status = ?, updated_at = NOW()
+             WHERE id = ?
+               AND meeting_id = ?`,
+            [value, participantId, meetingId]
+          );
+        }
+      }
+    }
+
+    res.redirect(`/meetings/${meetingId}#attendance-section`);
   } catch (err) {
     next(err);
   }
@@ -1534,6 +1635,7 @@ module.exports = {
   show,
   edit,
   update,
+  updateAttendance,
   destroy,
   exportAttendancePdf,
   renderUploadMinutesForm,

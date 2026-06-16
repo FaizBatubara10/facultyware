@@ -37,17 +37,21 @@
         <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs flex flex-col justify-between h-36">
           <div>
             <p class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Menunggu Konfirmasi</p>
-            <h2 class="text-4xl font-black mt-2 text-orange-500">0</h2>
+            <h2 class="text-4xl font-black mt-2 text-orange-500"><%= totalUndanganPending %></h2>
           </div>
-          <p class="text-xs text-zinc-400 font-normal">Menunggu modul undangan</p>
+          <a href="/invitations/inbox" class="text-xs text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1 transition-colors">
+            Lihat kotak masuk →
+          </a>
         </div>
 
         <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs flex flex-col justify-between h-36">
           <div>
             <p class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Notulen Pending</p>
-            <h2 class="text-4xl font-black mt-2 text-red-500">0</h2>
+            <h2 class="text-4xl font-black mt-2 text-red-500"><%= totalNotulenPending %></h2>
           </div>
-          <p class="text-xs text-zinc-400 font-normal">Menunggu modul notulen</p>
+          <a href="/meetings/upload-minutes" class="text-xs text-red-400 hover:text-red-500 font-semibold flex items-center gap-1 transition-colors">
+            Upload notulensi →
+          </a>
         </div>
 
       </div>
@@ -107,7 +111,46 @@
         </div>
 
         <div class="flex flex-col gap-6">
+
+          <!-- Widget Kotak Masuk -->
+          <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-base font-bold text-zinc-900 tracking-tight">Kotak Masuk</h3>
+              <a href="/invitations/inbox" class="text-xs text-zinc-400 hover:text-white transition-colors">Lihat semua →</a>
+            </div>
+            <% if (undanganTerbaru && undanganTerbaru.length > 0) { %>
+              <div class="flex flex-col gap-2">
+                <% undanganTerbaru.forEach(item => { %>
+                  <a href="/invitations/<%= item.participant_id %>"
+                    class="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 transition-colors group">
+                    <div class="bg-orange-50 rounded-xl p-2 shrink-0">
+                      <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-semibold text-zinc-800 truncate group-hover:text-emerald-700 transition-colors">
+                        <%= item.title %>
+                      </p>
+                      <p class="text-xs text-zinc-400 mt-0.5">
+                        <%= new Date(item.meeting_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+                      </p>
+                    </div>
+                    <span class="w-2 h-2 bg-orange-400 rounded-full shrink-0 animate-pulse"></span>
+                  </a>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="flex flex-col items-center justify-center py-6 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                <svg class="w-8 h-8 text-zinc-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <span class="text-sm text-zinc-400 font-medium text-center">Tidak ada undangan baru.</span>
+              </div>
+            <% } %>
+          </div>
           
+          <!-- Widget Ringkasan Kehadiran -->
           <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs">
             <h3 class="text-base font-bold text-zinc-900 mb-4 tracking-tight">Ringkasan Kehadiran</h3>
             
@@ -117,15 +160,35 @@
             </div>
           </div>
 
+          <!-- Widget Notulen Terbaru -->
           <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs">
             <div class="flex justify-between items-center mb-4">
               <h3 class="text-base font-bold text-zinc-900 tracking-tight">Notulen Terbaru</h3>
+              <a href="/meetings/upload-minutes" class="text-xs text-zinc-400 hover:text-white transition-colors">Lihat semua →</a>
             </div>
 
-            <div class="flex flex-col items-center justify-center py-6 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-              <svg class="w-8 h-8 text-zinc-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-              <span class="text-sm text-zinc-400 font-medium text-center">Belum ada notulen yang diunggah.</span>
-            </div>
+            <% if (notulenTerbaru && notulenTerbaru.length > 0) { %>
+              <div class="flex flex-col gap-2">
+                <% notulenTerbaru.forEach(item => { %>
+                  <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 transition-colors">
+                    <div class="bg-emerald-50 rounded-xl p-2 shrink-0">
+                      <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-semibold text-zinc-800 truncate"><%= item.meeting_title %></p>
+                      <p class="text-xs text-zinc-400 mt-0.5"><%= item.uploaded_at %></p>
+                    </div>
+                  </div>
+                <% }) %>
+              </div>
+            <% } else { %>
+              <div class="flex flex-col items-center justify-center py-6 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
+                <svg class="w-8 h-8 text-zinc-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                <span class="text-sm text-zinc-400 font-medium text-center">Belum ada notulen yang diunggah.</span>
+              </div>
+            <% } %>
           </div>
 
         </div>

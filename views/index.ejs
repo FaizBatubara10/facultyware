@@ -1,11 +1,893 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
-  </head>
-  <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
-  </body>
-</html>
+<%- include('../partials/header') %>
+
+<%
+  const filterData = typeof filters !== 'undefined' && filters ? filters : { q: '', status: 'all', month: 'all' };
+  const paginationData = typeof pagination !== 'undefined' && pagination
+    ? pagination
+    : { page: 1, totalPages: 1, totalItems: 0, limit: 5 };
+
+  function getDateObject(dateValue) {
+    const date = new Date(dateValue);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
+  function getMonthName(dateValue) {
+    const date = getDateObject(dateValue);
+
+    if (!date) {
+      return '-';
+    }
+
+    return date.toLocaleDateString('id-ID', {
+      month: 'short'
+    }).toUpperCase();
+  }
+
+  function getDayNumber(dateValue) {
+    const date = getDateObject(dateValue);
+
+    if (!date) {
+      return '-';
+    }
+
+    return String(date.getDate()).padStart(2, '0');
+  }
+
+  function formatTime(timeValue) {
+    if (!timeValue) {
+      return '-';
+    }
+
+    return String(timeValue).substring(0, 5);
+  }
+
+  function getMeetingTypeLabel(type) {
+    if (type === 'online') {
+      return 'Online';
+    }
+
+    if (type === 'hybrid') {
+      return 'Hybrid';
+    }
+
+    return 'Ruang Meeting';
+  }
+
+  function getMeetingTypeIcon(type) {
+    if (type === 'online') {
+      return '🌐';
+    }
+
+    if (type === 'hybrid') {
+      return '🔀';
+    }
+
+    return '📍';
+  }
+
+  function getStatusBadge(meeting) {
+    const status = meeting.status;
+    const date = getDateObject(meeting.meeting_date);
+
+    if (status === 'completed') {
+      return { label: 'Selesai', className: 'meeting-badge meeting-badge-success' };
+    }
+
+    if (status === 'cancelled') {
+      return { label: 'Dibatalkan', className: 'meeting-badge meeting-badge-danger' };
+    }
+
+    if (status === 'draft') {
+      return { label: 'Draft', className: 'meeting-badge meeting-badge-muted' };
+    }
+
+    if (!date) {
+      return { label: 'Scheduled', className: 'meeting-badge meeting-badge-success' };
+    }
+
+    const today = new Date();
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const meetingOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.ceil((meetingOnly - todayOnly) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return { label: 'Hari Ini', className: 'meeting-badge meeting-badge-success' };
+    }
+
+    if (diffDays > 0) {
+      return { label: diffDays + ' Hari Lagi', className: diffDays <= 7 ? 'meeting-badge meeting-badge-warning' : 'meeting-badge meeting-badge-danger-soft' };
+    }
+
+    return { label: 'Scheduled', className: 'meeting-badge meeting-badge-success' };
+  }
+
+  function getStatusLabel(status) {
+    if (status === 'scheduled') {
+      return 'Scheduled';
+    }
+
+    if (status === 'completed') {
+      return 'Completed';
+    }
+
+    if (status === 'cancelled') {
+      return 'Cancelled';
+    }
+
+    return 'Draft';
+  }
+
+  function getStatusPillClass(status) {
+    if (status === 'scheduled') {
+      return 'meeting-status-pill meeting-status-scheduled';
+    }
+
+    if (status === 'completed') {
+      return 'meeting-status-pill meeting-status-completed';
+    }
+
+    if (status === 'cancelled') {
+      return 'meeting-status-pill meeting-status-cancelled';
+    }
+
+    return 'meeting-status-pill meeting-status-draft';
+  }
+
+  function buildPageUrl(pageNumber) {
+    const params = [];
+
+    if (filterData.q) {
+      params.push('q=' + encodeURIComponent(filterData.q));
+    }
+
+    if (filterData.status && filterData.status !== 'all') {
+      params.push('status=' + encodeURIComponent(filterData.status));
+    }
+
+    if (filterData.month && filterData.month !== 'all') {
+      params.push('month=' + encodeURIComponent(filterData.month));
+    }
+
+    params.push('page=' + pageNumber);
+
+    return '/meetings?' + params.join('&');
+  }
+%>
+
+<style>
+  :root {
+    --list-page-bg: #ffffff;
+    --list-page-text: #111111;
+    --list-page-subtext: #6d665c;
+    --list-page-muted: #8d887f;
+    --list-page-border: #ded8cd;
+    --list-page-border-strong: #cfc6b8;
+    --list-page-card: #fffdf9;
+    --list-page-card-hover: #ffffff;
+    --list-page-soft: #f5f1ea;
+    --list-page-date: #e6f5ee;
+    --list-page-date-muted: #eeeae2;
+    --list-page-shadow: rgba(30, 28, 24, 0.07);
+    --list-page-shadow-soft: rgba(30, 28, 24, 0.05);
+    --list-green: #2f765d;
+    --list-green-dark: #27634f;
+  }
+
+  html.dark,
+  body.dark,
+  .dark,
+  [data-theme="dark"] {
+    --list-page-bg: #050505;
+    --list-page-text: #f8f6ef;
+    --list-page-subtext: #d5cdbf;
+    --list-page-muted: #b4aa9b;
+    --list-page-border: #4a4136;
+    --list-page-border-strong: #625647;
+    --list-page-card: #28231c;
+    --list-page-card-hover: #332d24;
+    --list-page-soft: #3a342a;
+    --list-page-date: #d9efe5;
+    --list-page-date-muted: #51483b;
+    --list-page-shadow: rgba(0, 0, 0, 0.40);
+    --list-page-shadow-soft: rgba(0, 0, 0, 0.28);
+    --list-green: #63b895;
+    --list-green-dark: #82d2af;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --list-page-bg: #050505;
+      --list-page-text: #f8f6ef;
+      --list-page-subtext: #d5cdbf;
+      --list-page-muted: #b4aa9b;
+      --list-page-border: #4a4136;
+      --list-page-border-strong: #625647;
+      --list-page-card: #28231c;
+      --list-page-card-hover: #332d24;
+      --list-page-soft: #3a342a;
+      --list-page-date: #d9efe5;
+      --list-page-date-muted: #51483b;
+      --list-page-shadow: rgba(0, 0, 0, 0.40);
+      --list-page-shadow-soft: rgba(0, 0, 0, 0.28);
+      --list-green: #63b895;
+      --list-green-dark: #82d2af;
+    }
+  }
+
+  body {
+    background: var(--list-page-bg) !important;
+  }
+
+  .meeting-page-shell {
+    min-height: calc(100vh - 72px);
+    background: var(--list-page-bg) !important;
+    color: var(--list-page-text);
+  }
+
+  .meeting-page-shell * {
+    box-sizing: border-box;
+  }
+
+  .meeting-page-content {
+    width: min(100%, 1440px);
+    margin: 0 auto;
+    padding: 18px 22px 30px;
+  }
+
+  .meeting-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .meeting-title {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.15;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: var(--list-page-text);
+  }
+
+  .meeting-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .meeting-top-button,
+  .meeting-create-button {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 12px;
+    padding: 0 15px;
+    font-size: 12.5px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .meeting-top-button {
+    border: 1px solid var(--list-page-border);
+    background: var(--list-page-card);
+    color: var(--list-page-text);
+  }
+
+  .meeting-top-button:hover {
+    background: var(--list-page-card-hover);
+    box-shadow: 0 8px 20px var(--list-page-shadow-soft);
+  }
+
+  .meeting-create-button {
+    border: 1px solid #2f765d;
+    background: #2f765d;
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(47, 118, 93, 0.18);
+  }
+
+  .meeting-create-button:hover {
+    background: #27634f;
+  }
+
+  .meeting-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .meeting-search-box {
+    position: relative;
+    flex: 1 1 300px;
+    max-width: 380px;
+  }
+
+  .meeting-search-box span {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12.5px;
+    opacity: 0.85;
+  }
+
+  .meeting-search-box input,
+  .meeting-filter-select {
+    height: 42px;
+    border-radius: 11px;
+    border: 1px solid var(--list-page-border);
+    background: var(--list-page-card);
+    color: var(--list-page-text);
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+
+  .meeting-search-box input {
+    width: 100%;
+    padding: 0 14px 0 42px;
+  }
+
+  .meeting-search-box input::placeholder {
+    color: var(--list-page-muted);
+  }
+
+  .meeting-filter-select {
+    min-width: 150px;
+    padding: 0 13px;
+    cursor: pointer;
+  }
+
+  .meeting-filter-select option {
+    background: var(--list-page-card);
+    color: var(--list-page-text);
+  }
+
+  .meeting-search-box input:focus,
+  .meeting-filter-select:focus {
+    border-color: #2f765d;
+    box-shadow: 0 0 0 4px rgba(47, 118, 93, 0.12);
+  }
+
+  .meeting-filter-submit {
+    height: 42px;
+    border: none;
+    border-radius: 11px;
+    padding: 0 15px;
+    background: #2f765d;
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .meeting-filter-submit:hover {
+    background: #27634f;
+  }
+
+  .meeting-alert {
+    margin-bottom: 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(244, 63, 94, 0.34);
+    background: rgba(244, 63, 94, 0.12);
+    color: #fda4af;
+    padding: 12px 16px;
+    font-size: 12.5px;
+    font-weight: 800;
+  }
+
+  .meeting-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .meeting-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    min-height: 78px;
+    border: 1px solid var(--list-page-border);
+    border-radius: 15px;
+    background: var(--list-page-card);
+    padding: 11px 14px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+  }
+
+  .meeting-card:hover {
+    transform: translateY(-1px);
+    border-color: var(--list-page-border-strong);
+    background: var(--list-page-card-hover);
+    box-shadow: 0 12px 24px var(--list-page-shadow);
+  }
+
+  .meeting-main-link {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .meeting-date-box {
+    width: 54px;
+    height: 54px;
+    border-radius: 13px;
+    background: var(--list-page-date);
+    color: #2f765d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .meeting-date-box.completed,
+  .meeting-date-box.cancelled,
+  .meeting-date-box.draft {
+    background: var(--list-page-date-muted);
+    color: var(--list-page-text);
+  }
+
+  .meeting-date-month {
+    font-size: 10.5px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    color: var(--list-page-muted);
+  }
+
+  .meeting-date-day {
+    margin-top: 6px;
+    font-size: 24px;
+    line-height: 0.85;
+    font-weight: 950;
+    letter-spacing: -0.08em;
+  }
+
+  .meeting-info {
+    min-width: 0;
+  }
+
+  .meeting-card-title {
+    margin: 0;
+    color: var(--list-page-text);
+    font-size: 16px;
+    line-height: 1.2;
+    font-weight: 850;
+    letter-spacing: -0.025em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .meeting-main-link:hover .meeting-card-title {
+    color: var(--list-green);
+  }
+
+  .meeting-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 15px;
+    margin-top: 8px;
+    color: var(--list-page-muted);
+    font-size: 12px;
+    font-weight: 650;
+  }
+
+  .meeting-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .meeting-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .meeting-badge,
+  .meeting-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    font-weight: 850;
+    white-space: nowrap;
+  }
+
+  .meeting-badge {
+    min-height: 24px;
+    padding: 0 10px;
+    font-size: 11.5px;
+  }
+
+  .meeting-status-pill {
+    min-height: 22px;
+    padding: 0 9px;
+    font-size: 11px;
+    line-height: 1;
+  }
+
+  .meeting-badge-success,
+  .meeting-status-scheduled {
+    background: rgba(47, 118, 93, 0.16);
+    color: var(--list-green);
+  }
+
+  .meeting-badge-warning {
+    background: rgba(214, 177, 105, 0.18);
+    color: #d9a851;
+  }
+
+  .meeting-badge-danger-soft {
+    background: rgba(248, 113, 113, 0.14);
+    color: #fb923c;
+  }
+
+  .meeting-badge-danger,
+  .meeting-status-cancelled {
+    background: rgba(244, 63, 94, 0.16);
+    color: #fb7185;
+  }
+
+  .meeting-badge-muted,
+  .meeting-status-completed {
+    background: var(--list-page-soft);
+    color: var(--list-page-subtext);
+  }
+
+  .meeting-status-draft {
+    background: rgba(245, 158, 11, 0.16);
+    color: #fbbf24;
+  }
+
+  .meeting-card-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 32px;
+    padding: 0 11px;
+    border-radius: 10px;
+    border: 1px solid var(--list-page-border);
+    background: var(--list-page-card);
+    color: var(--list-page-text);
+    font-size: 12px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .meeting-card-button:hover {
+    background: var(--list-page-card-hover);
+    border-color: var(--list-page-border-strong);
+    box-shadow: 0 8px 18px var(--list-page-shadow-soft);
+  }
+
+  .meeting-empty-state {
+    border: 1px dashed var(--list-page-border-strong);
+    border-radius: 16px;
+    background: var(--list-page-card);
+    padding: 36px 22px;
+    text-align: center;
+  }
+
+  .meeting-empty-state h2 {
+    margin: 0;
+    font-size: 16.5px;
+    font-weight: 900;
+    color: var(--list-page-text);
+  }
+
+  .meeting-empty-state p {
+    margin: 8px 0 0;
+    color: var(--list-page-muted);
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .meeting-pagination {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .meeting-pagination p {
+    margin: 0;
+    color: var(--list-page-subtext);
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  .meeting-pagination-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .meeting-page-link {
+    min-width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid var(--list-page-border);
+    background: var(--list-page-card);
+    color: var(--list-page-text);
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 850;
+  }
+
+  .meeting-page-link.active {
+    border-color: #2f765d;
+    background: #2f765d;
+    color: #ffffff;
+  }
+
+  .meeting-page-link:hover:not(.active) {
+    background: var(--list-page-card-hover);
+  }
+
+  @media (max-width: 1100px) {
+    .meeting-card {
+      grid-template-columns: 1fr;
+    }
+
+    .meeting-actions {
+      justify-content: flex-start;
+      padding-left: 68px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .meeting-page-content {
+      padding: 20px 16px 32px;
+    }
+
+    .meeting-header-row {
+      align-items: flex-start;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+
+    .meeting-title {
+      font-size: 24px;
+    }
+
+    .meeting-header-actions,
+    .meeting-top-button,
+    .meeting-create-button,
+    .meeting-search-box,
+    .meeting-filter-select,
+    .meeting-filter-submit {
+      width: 100%;
+      max-width: none;
+    }
+
+    .meeting-main-link {
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .meeting-card {
+      padding: 16px;
+    }
+
+    .meeting-date-box {
+      width: 52px;
+      height: 52px;
+    }
+
+    .meeting-date-day {
+      font-size: 24px;
+    }
+
+    .meeting-card-title {
+      font-size: 17px;
+    }
+
+    .meeting-meta-row {
+      font-size: 12.5px;
+      gap: 7px 10px;
+    }
+
+    .meeting-actions {
+      padding-left: 64px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .meeting-main-link {
+      grid-template-columns: 1fr;
+    }
+
+    .meeting-actions {
+      width: 100%;
+      padding-left: 0;
+      justify-content: flex-start;
+    }
+
+    .meeting-card-button {
+      flex: 1 1 120px;
+    }
+  }
+</style>
+
+<div class="meeting-page-shell">
+  <div class="meeting-page-content">
+
+    <div class="meeting-header-row">
+      <h1 class="meeting-title">Daftar Meeting</h1>
+
+      <div class="meeting-header-actions">
+        <a href="/meetings" class="meeting-top-button">
+          <span>🗓️</span>
+          <span>Semua Rapat</span>
+        </a>
+
+        <% if (typeof canCreateMeeting !== 'undefined' && canCreateMeeting) { %>
+          <a href="/meetings/create" class="meeting-create-button">
+            <span>+</span>
+            <span>Buat Meeting</span>
+          </a>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (typeof accessMessage !== 'undefined' && accessMessage) { %>
+      <div class="meeting-alert">
+        <%= accessMessage %>
+      </div>
+    <% } %>
+
+    <form action="/meetings" method="GET" class="meeting-filter-form">
+      <div class="meeting-search-box">
+        <span>🔍</span>
+        <input
+          type="text"
+          name="q"
+          value="<%= filterData.q || '' %>"
+          placeholder="Cari meeting..."
+        >
+      </div>
+
+      <select name="status" class="meeting-filter-select" onchange="this.form.submit()">
+        <option value="all" <%= filterData.status === 'all' ? 'selected' : '' %>>Semua Status</option>
+        <option value="draft" <%= filterData.status === 'draft' ? 'selected' : '' %>>Draft</option>
+        <option value="scheduled" <%= filterData.status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
+        <option value="completed" <%= filterData.status === 'completed' ? 'selected' : '' %>>Completed</option>
+        <option value="cancelled" <%= filterData.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+      </select>
+
+      <select name="month" class="meeting-filter-select" onchange="this.form.submit()">
+        <option value="all" <%= filterData.month === 'all' ? 'selected' : '' %>>Semua Bulan</option>
+        <option value="this_month" <%= filterData.month === 'this_month' ? 'selected' : '' %>>Bulan Ini</option>
+        <option value="next_month" <%= filterData.month === 'next_month' ? 'selected' : '' %>>Bulan Depan</option>
+      </select>
+
+      <button type="submit" class="meeting-filter-submit">Cari</button>
+    </form>
+
+    <div class="meeting-list">
+      <% if (meetings && meetings.length > 0) { %>
+        <% meetings.forEach(function(meeting) { %>
+          <% const statusBadge = getStatusBadge(meeting); %>
+
+          <div class="meeting-card">
+            <a href="/meetings/<%= meeting.id %>" class="meeting-main-link" aria-label="Buka detail <%= meeting.title %>">
+              <div class="meeting-date-box <%= meeting.status %>">
+                <div class="meeting-date-month"><%= getMonthName(meeting.meeting_date) %></div>
+                <div class="meeting-date-day"><%= getDayNumber(meeting.meeting_date) %></div>
+              </div>
+
+              <div class="meeting-info">
+                <h2 class="meeting-card-title"><%= meeting.title %></h2>
+
+                <div class="meeting-meta-row">
+                  <span class="meeting-meta-item">
+                    <span>⏰</span>
+                    <span><%= formatTime(meeting.start_time) %> – <%= formatTime(meeting.end_time) %></span>
+                  </span>
+
+                  <span class="meeting-meta-item">
+                    <span><%= getMeetingTypeIcon(meeting.meeting_type) %></span>
+                    <span><%= getMeetingTypeLabel(meeting.meeting_type) %></span>
+                  </span>
+
+                  <span class="meeting-meta-item">
+                    <span>👥</span>
+                    <span><%= meeting.participant_count || 0 %> orang</span>
+                  </span>
+
+                  <span class="<%= getStatusPillClass(meeting.status) %>">
+                    <%= getStatusLabel(meeting.status) %>
+                  </span>
+                </div>
+              </div>
+            </a>
+
+            <div class="meeting-actions">
+              <span class="<%= statusBadge.className %>">
+                <%= statusBadge.label %>
+              </span>
+
+              <a href="/meetings/<%= meeting.id %>#peserta" class="meeting-card-button">
+                <span>✅</span>
+                <span>Absensi</span>
+              </a>
+
+              <a href="/meetings/<%= meeting.id %>#notulen" class="meeting-card-button">
+                <span>📄</span>
+                <span>Notulen</span>
+              </a>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %>
+        <div class="meeting-empty-state">
+          <h2>Meeting Tidak Ditemukan</h2>
+          <p>Tidak ada meeting yang sesuai dengan akses akun, pencarian, atau filter yang dipilih.</p>
+        </div>
+      <% } %>
+    </div>
+
+    <% if (paginationData.totalPages > 1) { %>
+      <div class="meeting-pagination">
+        <p>
+          Halaman <strong><%= paginationData.page %></strong> dari <strong><%= paginationData.totalPages %></strong>
+        </p>
+
+        <div class="meeting-pagination-links">
+          <% if (paginationData.page > 1) { %>
+            <a href="<%= buildPageUrl(paginationData.page - 1) %>" class="meeting-page-link">
+              Sebelumnya
+            </a>
+          <% } %>
+
+          <% for (let pageNumber = 1; pageNumber <= paginationData.totalPages; pageNumber++) { %>
+            <a
+              href="<%= buildPageUrl(pageNumber) %>"
+              class="meeting-page-link <%= pageNumber === paginationData.page ? 'active' : '' %>"
+            >
+              <%= pageNumber %>
+            </a>
+          <% } %>
+
+          <% if (paginationData.page < paginationData.totalPages) { %>
+            <a href="<%= buildPageUrl(paginationData.page + 1) %>" class="meeting-page-link">
+              Berikutnya
+            </a>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

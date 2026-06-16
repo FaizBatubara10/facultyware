@@ -1,0 +1,208 @@
+<%- include('../partials/header') %>
+
+<div class="p-4 md:p-6 xl:p-8 min-h-screen">
+  <div class="max-w-3xl mx-auto">
+
+    <!-- Back -->
+    <div class="mb-6">
+      <a href="/invitations/inbox"
+        class="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition-colors">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Kembali ke Kotak Masuk
+      </a>
+    </div>
+
+    <!-- Alert sukses -->
+    <% if (typeof query !== 'undefined' && query.success) { %>
+      <% const isConfirmed = query.success === 'confirmed'; %>
+      <div class="mb-6 flex items-center gap-3 px-4 py-3 rounded-xl <%= isConfirmed ? 'bg-emerald-50 border border-emerald-200 text-emerald-700' : 'bg-red-50 border border-red-200 text-red-700' %>">
+        <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <% if (isConfirmed) { %>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          <% } else { %>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <% } %>
+        </svg>
+        <span class="text-sm font-medium">
+          <%= isConfirmed ? 'Anda telah mengkonfirmasi kehadiran untuk rapat ini.' : 'Anda telah menolak undangan rapat ini.' %>
+        </span>
+      </div>
+    <% } %>
+
+    <!-- Card utama -->
+    <div class="bg-white rounded-2xl shadow-xs overflow-hidden">
+
+      <!-- Header card -->
+      <div class="p-6 border-b border-zinc-100">
+        <div class="flex items-start justify-between gap-4">
+          <div>
+            <% 
+              const statusLabel = {
+                invited: { text: 'Menunggu Konfirmasi', cls: 'bg-orange-50 text-orange-600 border-orange-100' },
+                confirmed: { text: 'Dikonfirmasi', cls: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+                declined: { text: 'Ditolak', cls: 'bg-red-50 text-red-600 border-red-100' },
+                attended: { text: 'Hadir', cls: 'bg-blue-50 text-blue-700 border-blue-100' },
+                absent: { text: 'Tidak Hadir', cls: 'bg-zinc-100 text-zinc-500 border-zinc-200' },
+              };
+              const s = statusLabel[undangan.status] || statusLabel['invited'];
+            %>
+            <span class="inline-flex items-center border text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full mb-3 <%= s.cls %>">
+              <%= s.text %>
+            </span>
+            <h1 class="text-2xl font-bold text-zinc-900 leading-snug"><%= undangan.title %></h1>
+            <% if (undangan.description) { %>
+              <p class="text-sm text-zinc-500 mt-2 leading-relaxed"><%= undangan.description %></p>
+            <% } %>
+          </div>
+
+          <!-- Tanggal -->
+          <div class="bg-[#f0fdf4] text-center rounded-2xl py-3 px-5 border border-emerald-100/50 shrink-0">
+            <div class="text-[#16a34a] text-xs font-black uppercase tracking-widest">
+              <%= new Date(undangan.meeting_date).toLocaleString('id-ID', { month: 'short' }) %>
+            </div>
+            <div class="text-3xl font-black text-zinc-900 mt-0.5">
+              <%= new Date(undangan.meeting_date).getDate() %>
+            </div>
+            <div class="text-[10px] text-zinc-400 font-medium mt-0.5">
+              <%= new Date(undangan.meeting_date).toLocaleString('id-ID', { year: 'numeric' }) %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Detail info -->
+      <div class="p-6 border-b border-zinc-100 grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 bg-orange-50 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Waktu</p>
+            <p class="text-sm font-semibold text-zinc-800 mt-0.5">
+              <%= undangan.start_time.substring(0, 5) %> – <%= undangan.end_time.substring(0, 5) %> WIB
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <div>
+            <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Jenis Rapat</p>
+            <p class="text-sm font-semibold text-zinc-800 mt-0.5 capitalize"><%= undangan.meeting_type %></p>
+          </div>
+        </div>
+
+        <% if (undangan.meeting_type !== 'offline' && undangan.online_platform) { %>
+          <div class="flex items-start gap-3 sm:col-span-2">
+            <div class="w-8 h-8 bg-violet-50 rounded-lg flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4 text-violet-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.882v6.236a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Platform Online</p>
+              <p class="text-sm font-semibold text-zinc-800 mt-0.5"><%= undangan.online_platform %></p>
+              <% if (undangan.online_link) { %>
+                <a href="<%= undangan.online_link %>" target="_blank" rel="noopener"
+                  class="text-xs text-emerald-600 hover:text-emerald-700 font-medium mt-0.5 inline-flex items-center gap-1">
+                  Buka Link
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              <% } %>
+            </div>
+          </div>
+        <% } %>
+
+      </div>
+
+      <!-- Daftar peserta -->
+      <div class="p-6 border-b border-zinc-100">
+        <h3 class="text-sm font-bold text-zinc-700 mb-4 tracking-tight">
+          Peserta Rapat
+          <span class="ml-1.5 text-xs font-semibold text-zinc-400">(<%= peserta.length %> orang)</span>
+        </h3>
+        <div class="flex flex-col gap-2">
+          <% peserta.forEach(p => { %>
+            <%
+              const ps = {
+                invited: { text: 'Menunggu', cls: 'bg-orange-50 text-orange-600' },
+                confirmed: { text: 'Hadir', cls: 'bg-emerald-50 text-emerald-700' },
+                declined: { text: 'Tolak', cls: 'bg-red-50 text-red-600' },
+                attended: { text: 'Hadir', cls: 'bg-blue-50 text-blue-700' },
+                absent: { text: 'Absen', cls: 'bg-zinc-100 text-zinc-500' },
+              };
+              const badge = ps[p.status] || ps['invited'];
+            %>
+            <div class="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-zinc-50 transition-colors">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-xs font-bold text-zinc-600 uppercase shrink-0">
+                  <%= p.name.substring(0, 2) %>
+                </div>
+                <div>
+                  <p class="text-sm font-semibold text-zinc-800"><%= p.name %></p>
+                  <% if (p.employee_number) { %>
+                    <p class="text-xs text-zinc-400"><%= p.employee_number %></p>
+                  <% } %>
+                </div>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-1 rounded-full <%= badge.cls %>">
+                <%= badge.text %>
+              </span>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <!-- Tombol aksi -->
+      <div class="p-6">
+        <% if (undangan.status === 'invited') { %>
+          <p class="text-xs text-zinc-400 font-medium mb-4">Konfirmasi kehadiran Anda untuk rapat ini:</p>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <form action="/invitations/<%= undangan.participant_id %>/status" method="POST" class="flex-1">
+              <input type="hidden" name="status" value="confirmed">
+              <button type="submit"
+                class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-5 py-3 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Terima Undangan
+              </button>
+            </form>
+            <form action="/invitations/<%= undangan.participant_id %>/status" method="POST" class="flex-1">
+              <input type="hidden" name="status" value="declined">
+              <button type="submit"
+                class="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white hover:bg-red-50 border border-red-200 text-red-600 font-semibold text-sm px-5 py-3 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Tolak Undangan
+              </button>
+            </form>
+          </div>
+        <% } else { %>
+          <div class="flex items-center gap-2 text-sm text-zinc-400">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Status undangan ini sudah diperbarui dan tidak dapat diubah lagi dari halaman ini.
+          </div>
+        <% } %>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>
