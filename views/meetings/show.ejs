@@ -2,10 +2,7 @@
 
 <%
   function formatTime(timeValue) {
-    if (!timeValue) {
-      return '-';
-    }
-
+    if (!timeValue) return '-';
     return String(timeValue).substring(0, 5);
   }
 
@@ -16,11 +13,7 @@
 
   function formatMeetingDate(dateValue) {
     const date = getDateObject(dateValue);
-
-    if (!date) {
-      return '-';
-    }
-
+    if (!date) return '-';
     return date.toLocaleDateString('id-ID', {
       day: '2-digit',
       month: 'long',
@@ -30,24 +23,14 @@
 
   function getMeetingMonth(dateValue) {
     const date = getDateObject(dateValue);
-
-    if (!date) {
-      return '-';
-    }
-
-    return date.toLocaleDateString('id-ID', {
-      month: 'short'
-    });
+    if (!date) return '-';
+    return date.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase();
   }
 
   function getMeetingDay(dateValue) {
     const date = getDateObject(dateValue);
-
-    if (!date) {
-      return '-';
-    }
-
-    return date.getDate();
+    if (!date) return '-';
+    return String(date.getDate()).padStart(2, '0');
   }
 
   function getStatusLabel(status) {
@@ -68,305 +51,776 @@
   function getMeetingTypeLabel(type) {
     if (type === 'online') return 'Online';
     if (type === 'hybrid') return 'Hybrid';
-    return 'Tatap Muka';
+    return 'Ruang Meeting';
   }
 
-  function getStatusClass(status) {
-    if (status === 'scheduled') {
-      return 'bg-emerald-50 text-emerald-700';
-    }
+  function getMeetingTypeIcon(type) {
+    if (type === 'online') return '🌐';
+    if (type === 'hybrid') return '🔀';
+    return '📍';
+  }
 
-    if (status === 'completed') {
-      return 'bg-zinc-100 text-zinc-700';
-    }
-
-    if (status === 'cancelled') {
-      return 'bg-red-50 text-red-700';
-    }
-
-    return 'bg-amber-50 text-amber-700';
+  function getStatusPillClass(status) {
+    if (status === 'scheduled') return 'detail-pill detail-pill-scheduled';
+    if (status === 'completed') return 'detail-pill detail-pill-completed';
+    if (status === 'cancelled') return 'detail-pill detail-pill-cancelled';
+    return 'detail-pill detail-pill-draft';
   }
 
   function getParticipantBadgeClass(status) {
-    if (status === 'attended') {
-      return 'bg-emerald-50 text-emerald-700';
-    }
-
-    if (status === 'absent' || status === 'declined') {
-      return 'bg-red-50 text-red-700';
-    }
-
-    if (status === 'confirmed') {
-      return 'bg-blue-50 text-blue-700';
-    }
-
-    return 'bg-amber-50 text-amber-700';
+    if (status === 'attended') return 'participant-pill participant-attended';
+    if (status === 'absent' || status === 'declined') return 'participant-pill participant-danger';
+    if (status === 'confirmed') return 'participant-pill participant-confirmed';
+    return 'participant-pill participant-invited';
   }
 
   const meetingStartTime = formatTime(meeting.start_time);
   const meetingEndTime = formatTime(meeting.end_time);
-  const externalParticipantList = typeof externalParticipants !== 'undefined' && externalParticipants
-    ? externalParticipants
-    : [];
+  const externalParticipantList = typeof externalParticipants !== 'undefined' && externalParticipants ? externalParticipants : [];
+  const internalCount = participants ? participants.length : 0;
+  const externalCount = externalParticipantList.length;
+  const totalParticipantCount = internalCount + externalCount;
+  const meetingDescription = meeting.description || 'Tidak ada deskripsi atau agenda yang dicantumkan untuk meeting ini.';
+  const locationValue = meeting.online_link || meeting.location || meeting.room_name || meeting.room || '-';
+  const canEditMeeting = typeof isHost !== 'undefined'
+    && isHost
+    && meeting.status !== 'completed'
+    && meeting.status !== 'cancelled';
+  const canShowEditAttendance = typeof canEditAttendance !== 'undefined' && canEditAttendance;
 %>
 
-<div class="p-4 md:p-6 xl:p-8 bg-[#0c0c0e] min-h-screen text-white">
-  <div class="max-w-5xl mx-auto">
+<style>
+  body {
+    background: #f4f1eb !important;
+  }
 
-    <div class="mb-6">
-      <a
-        href="/meetings"
-        class="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-semibold"
-      >
-        <span class="text-xl leading-none">←</span>
-        <span>Kembali ke Daftar Meeting</span>
-      </a>
-    </div>
+  .detail-shell {
+    min-height: calc(100vh - 72px);
+    background: #f4f1eb;
+    color: #171717;
+  }
 
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+  .detail-shell * {
+    box-sizing: border-box;
+  }
+
+  .detail-content {
+    width: min(100%, 1060px);
+    margin: 0 auto;
+    padding: 16px 22px 28px;
+  }
+
+  .detail-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: #625b50;
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+
+  .detail-back-link:hover {
+    color: #2f765d;
+  }
+
+  .detail-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 12px;
+  }
+
+  .detail-title {
+    margin: 0;
+    color: #111111;
+    font-size: 24px;
+    line-height: 1.12;
+    font-weight: 950;
+    letter-spacing: -0.045em;
+  }
+
+  .detail-subline {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .detail-actions form {
+    margin: 0;
+  }
+
+  .detail-button,
+  .detail-danger-button {
+    min-height: 33px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: 11px;
+    padding: 0 11px;
+    font-size: 12.5px;
+    font-weight: 850;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .detail-button {
+    border: 1px solid #d7d2c8;
+    background: #fffdf9;
+    color: #111111;
+  }
+
+  .detail-button:hover {
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(17, 17, 17, 0.06);
+  }
+
+  .detail-button.primary {
+    border-color: #2f765d;
+    background: #2f765d;
+    color: #ffffff;
+  }
+
+  .detail-button.primary:hover {
+    background: #27634f;
+  }
+
+  .detail-button.info {
+    border-color: #bcd7c9;
+    background: #edf8f2;
+    color: #1f6e4c;
+  }
+
+  .detail-button.disabled {
+    border-color: #d7d2c8;
+    background: #f2eee8;
+    color: #8d887f;
+    cursor: default;
+  }
+
+  .detail-button.disabled:hover {
+    background: #f2eee8;
+    box-shadow: none;
+  }
+
+  .detail-danger-button {
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #be123c;
+  }
+
+  .detail-danger-button:hover {
+    background: #ffe4e6;
+  }
+
+  .detail-pill,
+  .participant-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    border-radius: 999px;
+    padding: 0 10px;
+    font-size: 11.5px;
+    font-weight: 850;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .detail-pill-scheduled,
+  .participant-attended {
+    background: #e4f5ec;
+    color: #1f6e4c;
+  }
+
+  .detail-pill-completed {
+    background: #ece8df;
+    color: #625b50;
+  }
+
+  .detail-pill-cancelled,
+  .participant-danger {
+    background: #fff1f2;
+    color: #be123c;
+  }
+
+  .detail-pill-draft,
+  .participant-invited {
+    background: #fff7df;
+    color: #a06000;
+  }
+
+  .participant-confirmed {
+    background: #eef5ff;
+    color: #275781;
+  }
+
+  .detail-type-pill {
+    background: #f2eee8;
+    color: #625b50;
+  }
+
+  .detail-description-card {
+    border: 1px solid #ded8cd;
+    border-radius: 15px;
+    background: #fffdf9;
+    padding: 12px 15px;
+    margin-bottom: 12px;
+  }
+
+  .detail-description-label {
+    margin: 0 0 5px;
+    color: #8d887f;
+    font-size: 10.8px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .detail-description-text {
+    margin: 0;
+    color: #3f3a33;
+    font-size: 13.3px;
+    font-weight: 650;
+    line-height: 1.55;
+  }
+
+  .detail-main-card {
+    border: 1px solid #ded8cd;
+    border-radius: 16px;
+    background: #fffdf9;
+    overflow: hidden;
+    box-shadow: 0 10px 24px rgba(30, 28, 24, 0.04);
+  }
+
+  .detail-overview {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) 240px;
+    gap: 14px;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #eee8de;
+  }
+
+  .detail-date-box {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: #e6f5ee;
+    color: #2f765d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .detail-date-month {
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    font-weight: 850;
+    color: #8d887f;
+  }
+
+  .detail-date-day {
+    margin-top: 5px;
+    font-size: 24px;
+    line-height: 0.85;
+    font-weight: 950;
+    letter-spacing: -0.08em;
+  }
+
+  .detail-overview-title {
+    margin: 0 0 7px;
+    color: #111111;
+    font-size: 15px;
+    font-weight: 950;
+    letter-spacing: -0.02em;
+  }
+
+  .detail-overview-meta {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    flex-wrap: wrap;
+    color: #8d887f;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  .detail-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .detail-stat-box {
+    border: 1px solid #eee8de;
+    border-radius: 13px;
+    background: #f8f5ef;
+    padding: 10px 11px;
+  }
+
+  .detail-stat-number {
+    margin: 0;
+    color: #2f765d;
+    font-size: 17px;
+    line-height: 1;
+    font-weight: 950;
+  }
+
+  .detail-stat-label {
+    margin: 4px 0 0;
+    color: #8d887f;
+    font-size: 10.5px;
+    font-weight: 850;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .detail-info-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    padding: 13px 16px;
+  }
+
+  .detail-info-box {
+    border: 1px solid #eee8de;
+    border-radius: 13px;
+    background: #f8f5ef;
+    padding: 11px 12px;
+    min-width: 0;
+  }
+
+  .detail-info-box.wide {
+    grid-column: 1 / -1;
+  }
+
+  .detail-info-label {
+    margin: 0 0 5px;
+    color: #8d887f;
+    font-size: 10.5px;
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .detail-info-value {
+    margin: 0;
+    color: #111111;
+    font-size: 13.2px;
+    font-weight: 850;
+    line-height: 1.4;
+    word-break: break-word;
+  }
+
+  .detail-info-value a {
+    color: #2f765d;
+    text-decoration: none;
+  }
+
+  .detail-info-value a:hover {
+    text-decoration: underline;
+  }
+
+  .detail-section {
+    padding: 14px 16px;
+    border-top: 1px solid #eee8de;
+  }
+
+  .detail-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 11px;
+  }
+
+  .detail-section-title {
+    margin: 0;
+    color: #111111;
+    font-size: 15px;
+    font-weight: 950;
+    letter-spacing: -0.02em;
+  }
+
+  .detail-section-note {
+    margin: 3px 0 0;
+    color: #8d887f;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.45;
+  }
+
+  .detail-count-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    background: #f2eee8;
+    color: #625b50;
+    font-size: 11.5px;
+    font-weight: 850;
+    white-space: nowrap;
+  }
+
+  .min-w-0 {
+    min-width: 0;
+  }
+
+  .participant-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .participant-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid #eee8de;
+    border-radius: 13px;
+    background: #ffffff;
+    padding: 9px 11px;
+    min-width: 0;
+  }
+
+  .participant-left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+  }
+
+  .participant-avatar {
+    width: 31px;
+    height: 31px;
+    border-radius: 999px;
+    background: #e6f5ee;
+    color: #2f765d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+
+  .participant-avatar.external {
+    background: #f2eee8;
+    color: #625b50;
+  }
+
+  .participant-name {
+    margin: 0;
+    color: #111111;
+    font-size: 13.2px;
+    font-weight: 850;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .participant-meta {
+    margin: 2px 0 0;
+    color: #8d887f;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .detail-empty {
+    border: 1px dashed #cfc6b8;
+    border-radius: 13px;
+    background: #fffdf9;
+    padding: 20px 18px;
+    text-align: center;
+  }
+
+  .detail-empty p {
+    margin: 0;
+    color: #7a746b;
+    font-size: 12.5px;
+    font-weight: 750;
+    line-height: 1.5;
+  }
+
+  @media (max-width: 1000px) {
+    .detail-overview {
+      grid-template-columns: 68px minmax(0, 1fr);
+    }
+
+    .detail-stats-row {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .detail-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-actions {
+      justify-content: flex-start;
+    }
+
+    .detail-info-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .participant-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .detail-content {
+      padding: 16px 14px 28px;
+    }
+
+    .detail-title {
+      font-size: 22px;
+    }
+
+    .detail-actions,
+    .detail-button,
+    .detail-danger-button {
+      width: 100%;
+    }
+
+    .detail-overview,
+    .detail-info-grid,
+    .detail-section {
+      padding-left: 14px;
+      padding-right: 14px;
+    }
+
+    .detail-info-grid,
+    .detail-stats-row {
+      grid-template-columns: 1fr;
+    }
+
+    .detail-section-header {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
+</style>
+
+<div class="detail-shell">
+  <div class="detail-content">
+
+    <a href="/meetings" class="detail-back-link">
+      <span>←</span>
+      <span>Kembali ke Daftar Meeting</span>
+    </a>
+
+    <div class="detail-hero">
       <div>
-        <h1 class="text-3xl font-bold tracking-tight text-white opacity-90">
-          Detail Meeting
-        </h1>
-
-        <p class="text-zinc-400 text-sm mt-1">
-          Informasi lengkap mengenai jadwal rapat yang dipilih.
-        </p>
+        <h1 class="detail-title"><%= meeting.title %></h1>
+        <div class="detail-subline">
+          <span class="<%= getStatusPillClass(meeting.status) %>"><%= getStatusLabel(meeting.status) %></span>
+          <span class="detail-pill detail-type-pill"><%= getMeetingTypeIcon(meeting.meeting_type) %> <%= getMeetingTypeLabel(meeting.meeting_type) %></span>
+        </div>
       </div>
 
       <% if (typeof isHost !== 'undefined' && isHost) { %>
-        <div class="flex flex-wrap gap-2">
-          <a
-            href="/meetings/<%= meeting.id %>/export-attendance"
-            class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-zinc-700 text-white hover:bg-zinc-600 font-semibold text-sm transition-colors"
+        <div class="detail-actions">
+          <button
+            type="button"
+            class="detail-button disabled"
+            title="Fitur export daftar hadir akan dikerjakan oleh anggota tim yang bertugas"
+            onclick="alert('Fitur Export Daftar Hadir belum diaktifkan karena bagian ini dikerjakan oleh anggota tim yang bertugas.');"
           >
-            Export Daftar Hadir
-          </a>
+            <span>📤</span>
+            <span>Export Daftar Hadir</span>
+          </button>
 
-          <a
-            href="/meetings/<%= meeting.id %>/edit"
-            class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-emerald-700 text-white hover:bg-emerald-600 font-semibold text-sm transition-colors"
-          >
-            Edit
-          </a>
-
-          <form
-            action="/meetings/<%= meeting.id %>/delete"
-            method="POST"
-            onsubmit="return confirm('Yakin ingin menghapus meeting ini?')"
-          >
+          <% if (canShowEditAttendance) { %>
             <button
-              type="submit"
-              class="inline-flex justify-center items-center px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-500 font-semibold text-sm transition-colors"
+              type="button"
+              class="detail-button info"
+              title="Tombol sementara untuk fitur edit kehadiran"
+              onclick="alert('Fitur Edit Kehadiran disiapkan sebagai tombol placeholder. Halaman prosesnya akan dikerjakan oleh anggota tim yang bertugas.');"
             >
-              Hapus
+              <span>✅</span>
+              <span>Edit Kehadiran</span>
+            </button>
+          <% } %>
+
+          <% if (canEditMeeting) { %>
+            <a href="/meetings/<%= meeting.id %>/edit" class="detail-button primary">
+              <span>✏️</span>
+              <span>Edit Meeting</span>
+            </a>
+          <% } %>
+
+          <form action="/meetings/<%= meeting.id %>/delete" method="POST" onsubmit="return confirm('Yakin ingin menghapus meeting ini?')">
+            <button type="submit" class="detail-danger-button">
+              <span>🗑️</span>
+              <span>Hapus</span>
             </button>
           </form>
         </div>
       <% } %>
     </div>
 
-    <div class="bg-white text-zinc-900 rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
+    <div class="detail-description-card">
+      <p class="detail-description-label">Deskripsi Meeting</p>
+      <p class="detail-description-text"><%= meetingDescription %></p>
+    </div>
 
-      <div class="p-6 border-b border-zinc-200">
-        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+    <div class="detail-main-card">
+      <div class="detail-overview">
+        <div class="detail-date-box">
+          <div class="detail-date-month"><%= getMeetingMonth(meeting.meeting_date) %></div>
+          <div class="detail-date-day"><%= getMeetingDay(meeting.meeting_date) %></div>
+        </div>
 
-          <div>
-            <div class="flex flex-wrap items-center gap-2 mb-3">
-              <span class="capitalize px-3 py-1 rounded-full <%= getStatusClass(meeting.status) %> text-xs font-semibold">
-                <%= getStatusLabel(meeting.status) %>
-              </span>
-
-              <span class="capitalize px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
-                <%= getMeetingTypeLabel(meeting.meeting_type) %>
-              </span>
-            </div>
-
-            <h2 class="text-2xl md:text-3xl font-bold text-zinc-900">
-              <%= meeting.title %>
-            </h2>
-
-            <p class="text-zinc-500 mt-3 leading-relaxed">
-              <%= meeting.description || 'Tidak ada deskripsi atau agenda untuk meeting ini.' %>
-            </p>
+        <div>
+          <p class="detail-overview-title">Ringkasan Jadwal</p>
+          <div class="detail-overview-meta">
+            <span>⏰ <%= meetingStartTime %> – <%= meetingEndTime %></span>
+            <span>📍 <%= getMeetingTypeLabel(meeting.meeting_type) %></span>
+            <span>👥 <%= totalParticipantCount %> peserta</span>
           </div>
+        </div>
 
-          <div class="w-20 h-20 rounded-2xl bg-emerald-50 flex flex-col items-center justify-center shrink-0">
-            <div class="text-xs font-bold text-zinc-400 uppercase">
-              <%= getMeetingMonth(meeting.meeting_date) %>
-            </div>
-
-            <div class="text-3xl font-black text-emerald-700 leading-none">
-              <%= getMeetingDay(meeting.meeting_date) %>
-            </div>
+        <div class="detail-stats-row">
+          <div class="detail-stat-box">
+            <p class="detail-stat-number"><%= internalCount %></p>
+            <p class="detail-stat-label">Internal</p>
           </div>
-
+          <div class="detail-stat-box">
+            <p class="detail-stat-number"><%= externalCount %></p>
+            <p class="detail-stat-label">Eksternal</p>
+          </div>
+          <div class="detail-stat-box">
+            <p class="detail-stat-number"><%= totalParticipantCount %></p>
+            <p class="detail-stat-label">Total</p>
+          </div>
         </div>
       </div>
 
-      <div class="p-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-
-          <div class="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-            <p class="text-xs font-bold text-zinc-400 uppercase mb-1">
-              Tanggal
-            </p>
-
-            <p class="font-bold text-zinc-900">
-              <%= formatMeetingDate(meeting.meeting_date) %>
-            </p>
-          </div>
-
-          <div class="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-            <p class="text-xs font-bold text-zinc-400 uppercase mb-1">
-              Waktu Mulai
-            </p>
-
-            <p class="font-bold text-zinc-900">
-              <%= meetingStartTime %>
-            </p>
-          </div>
-
-          <div class="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-            <p class="text-xs font-bold text-zinc-400 uppercase mb-1">
-              Waktu Selesai
-            </p>
-
-            <p class="font-bold text-zinc-900">
-              <%= meetingEndTime %>
-            </p>
-          </div>
-
-          <div class="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-            <p class="text-xs font-bold text-zinc-400 uppercase mb-1">
-              Tipe
-            </p>
-
-            <p class="capitalize font-bold text-zinc-900">
-              <%= getMeetingTypeLabel(meeting.meeting_type) %>
-            </p>
-          </div>
-
+      <div class="detail-info-grid">
+        <div class="detail-info-box">
+          <p class="detail-info-label">Tanggal</p>
+          <p class="detail-info-value"><%= formatMeetingDate(meeting.meeting_date) %></p>
         </div>
 
-        <div class="mt-4 rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-          <p class="text-xs font-bold text-zinc-400 uppercase mb-1">
-            Lokasi / Link Meeting
-          </p>
+        <div class="detail-info-box">
+          <p class="detail-info-label">Waktu Mulai</p>
+          <p class="detail-info-value"><%= meetingStartTime %></p>
+        </div>
 
-          <% if (meeting.online_link) { %>
-            <% if (String(meeting.online_link).startsWith('http')) { %>
-              <a
-                href="<%= meeting.online_link %>"
-                target="_blank"
-                class="font-bold text-emerald-700 hover:text-emerald-600 break-all"
-              >
-                <%= meeting.online_link %>
-              </a>
+        <div class="detail-info-box">
+          <p class="detail-info-label">Waktu Selesai</p>
+          <p class="detail-info-value"><%= meetingEndTime %></p>
+        </div>
+
+        <div class="detail-info-box">
+          <p class="detail-info-label">Tipe Meeting</p>
+          <p class="detail-info-value"><%= getMeetingTypeLabel(meeting.meeting_type) %></p>
+        </div>
+
+        <div class="detail-info-box wide">
+          <p class="detail-info-label">Lokasi / Link Meeting</p>
+          <p class="detail-info-value">
+            <% if (locationValue && locationValue !== '-') { %>
+              <% if (String(locationValue).startsWith('http')) { %>
+                <a href="<%= locationValue %>" target="_blank"><%= locationValue %></a>
+              <% } else { %>
+                <%= locationValue %>
+              <% } %>
             <% } else { %>
-              <p class="font-bold text-zinc-900 break-all">
-                <%= meeting.online_link %>
-              </p>
-            <% } %>
-          <% } else { %>
-            <p class="font-bold text-zinc-900">
               -
-            </p>
-          <% } %>
+            <% } %>
+          </p>
         </div>
       </div>
 
-      <div class="p-6 border-t border-zinc-200">
-        <div class="flex items-center justify-between gap-4 mb-4">
+      <div id="peserta" class="detail-section">
+        <div class="detail-section-header">
           <div>
-            <h3 class="text-lg font-bold text-zinc-900">
-              Peserta Internal
-            </h3>
-
-            <p class="text-sm text-zinc-500 mt-1">
-              Daftar pegawai internal yang diundang ke meeting ini.
-            </p>
+            <h2 class="detail-section-title">Peserta Internal</h2>
+            <p class="detail-section-note">Pegawai internal yang diundang ke meeting ini.</p>
           </div>
 
-          <span class="px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-xs font-semibold">
-            <%= participants ? participants.length : 0 %> peserta
-          </span>
+          <span class="detail-count-pill"><%= internalCount %> peserta</span>
         </div>
 
         <% if (participants && participants.length > 0) { %>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="participant-grid">
             <% participants.forEach(function(participant) { %>
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 bg-white">
-
-                <div class="flex items-center gap-3 min-w-0">
-                  <div class="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
+              <div class="participant-card">
+                <div class="participant-left">
+                  <div class="participant-avatar">
                     <%= participant.name ? participant.name.substring(0, 1).toUpperCase() : '?' %>
                   </div>
 
                   <div class="min-w-0">
-                    <p class="font-bold text-zinc-900 truncate">
-                      <%= participant.name %>
-                    </p>
-
-                    <p class="text-xs text-zinc-400">
-                      <%= participant.employee_number || 'Tidak ada nomor pegawai' %>
-                    </p>
+                    <p class="participant-name"><%= participant.name %></p>
+                    <p class="participant-meta"><%= participant.employee_number || 'Tidak ada nomor pegawai' %></p>
                   </div>
                 </div>
 
-                <span class="capitalize px-2.5 py-1 rounded-full <%= getParticipantBadgeClass(participant.status) %> text-xs font-semibold shrink-0">
+                <span class="<%= getParticipantBadgeClass(participant.status) %>">
                   <%= getParticipantStatusLabel(participant.status) %>
                 </span>
-
               </div>
             <% }) %>
           </div>
         <% } else { %>
-          <div class="rounded-xl border border-dashed border-zinc-300 p-8 text-center">
-            <p class="text-zinc-500 font-semibold">
-              Belum ada peserta internal yang ditambahkan.
-            </p>
-
-            <p class="text-sm text-zinc-400 mt-1">
-              Peserta internal dapat ditambahkan melalui halaman edit meeting.
-            </p>
+          <div class="detail-empty">
+            <p>Belum ada peserta internal yang ditambahkan.</p>
           </div>
         <% } %>
       </div>
 
-      <div class="p-6 border-t border-zinc-200">
-        <div class="flex items-center justify-between gap-4 mb-4">
+      <div class="detail-section">
+        <div class="detail-section-header">
           <div>
-            <h3 class="text-lg font-bold text-zinc-900">
-              Peserta Eksternal
-            </h3>
-
-            <p class="text-sm text-zinc-500 mt-1">
-              Daftar peserta luar yang dicatat oleh host dan tidak memiliki akun login.
-            </p>
+            <h2 class="detail-section-title">Peserta Eksternal</h2>
+            <p class="detail-section-note">Peserta luar yang dicatat oleh host dan tidak memiliki akun login.</p>
           </div>
 
-          <span class="px-3 py-1 rounded-full bg-zinc-100 text-zinc-600 text-xs font-semibold">
-            <%= externalParticipantList.length %> peserta
-          </span>
+          <span class="detail-count-pill"><%= externalCount %> peserta</span>
         </div>
 
         <% if (externalParticipantList.length > 0) { %>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div class="participant-grid">
             <% externalParticipantList.forEach(function(participant) { %>
-              <div class="flex items-center justify-between gap-3 rounded-xl border border-zinc-200 p-4 bg-white">
-
-                <div class="flex items-center gap-3 min-w-0">
-                  <div class="w-10 h-10 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center font-bold text-sm shrink-0">
+              <div class="participant-card">
+                <div class="participant-left">
+                  <div class="participant-avatar external">
                     <%= participant.name ? participant.name.substring(0, 1).toUpperCase() : '?' %>
                   </div>
 
                   <div class="min-w-0">
-                    <p class="font-bold text-zinc-900 truncate">
-                      <%= participant.name %>
-                    </p>
-
-                    <p class="text-xs text-zinc-400 truncate">
+                    <p class="participant-name"><%= participant.name %></p>
+                    <p class="participant-meta">
                       <%= participant.institution || 'Instansi tidak dicantumkan' %>
                       <% if (participant.email) { %>
                         • <%= participant.email %>
@@ -375,26 +829,27 @@
                   </div>
                 </div>
 
-                <span class="capitalize px-2.5 py-1 rounded-full <%= getParticipantBadgeClass(participant.status) %> text-xs font-semibold shrink-0">
+                <span class="<%= getParticipantBadgeClass(participant.status) %>">
                   <%= getParticipantStatusLabel(participant.status) %>
                 </span>
-
               </div>
             <% }) %>
           </div>
         <% } else { %>
-          <div class="rounded-xl border border-dashed border-zinc-300 p-8 text-center">
-            <p class="text-zinc-500 font-semibold">
-              Belum ada peserta eksternal yang ditambahkan.
-            </p>
-
-            <p class="text-sm text-zinc-400 mt-1">
-              Peserta eksternal dapat ditambahkan melalui halaman edit meeting.
-            </p>
+          <div class="detail-empty">
+            <p>Belum ada peserta eksternal yang ditambahkan.</p>
           </div>
         <% } %>
       </div>
 
+      <div id="notulen" class="detail-section">
+        <div class="detail-section-header">
+          <div>
+            <h2 class="detail-section-title">Notulen & Dokumentasi</h2>
+            <p class="detail-section-note">Bagian ini mengikuti fitur notulen/dokumentasi yang sudah dipisahkan dari fitur meeting.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>

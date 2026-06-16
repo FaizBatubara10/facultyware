@@ -27,6 +27,22 @@ const formatDateValue = (dateValue) => {
   return `${year}-${month}-${day}`;
 };
 
+
+
+const syncMeetingStatuses = async () => {
+  await db.query(`
+    UPDATE meetings
+    SET status = CASE
+          WHEN status = 'scheduled' THEN 'completed'
+          WHEN status = 'draft' THEN 'cancelled'
+          ELSE status
+        END,
+        updated_at = NOW()
+    WHERE status IN ('scheduled', 'draft')
+      AND TIMESTAMP(meeting_date, start_time) <= NOW()
+  `);
+};
+
 const getAccessibleMeetingCondition = () => {
   return `
     LEFT JOIN meeting_participants mp_access
@@ -57,6 +73,8 @@ const buildMeetingPayload = (meeting) => {
 
 const listMeetings = async (req, res, next) => {
   try {
+    await syncMeetingStatuses();
+
     const currentEmployee = await getCurrentEmployee(req.session.userId);
 
     if (!currentEmployee) {
@@ -121,6 +139,8 @@ const showMeeting = async (req, res, next) => {
   const meetingId = req.params.id;
 
   try {
+    await syncMeetingStatuses();
+
     const currentEmployee = await getCurrentEmployee(req.session.userId);
 
     if (!currentEmployee) {

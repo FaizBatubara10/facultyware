@@ -160,6 +160,38 @@ const getExternalParticipantsByMeetingId = async (meetingId) => {
   return externalParticipants;
 };
 
+
+
+/*
+  Auto update status meeting berdasarkan waktu mulai:
+  - scheduled -> completed jika waktu mulai sudah tercapai/lewat
+  - draft -> cancelled jika waktu mulai sudah tercapai/lewat
+
+  Catatan:
+  Ini berjalan saat halaman/fitur meeting diakses, bukan memakai background cron.
+*/
+const syncMeetingStatuses = async () => {
+  await db.query(`
+    UPDATE meetings
+    SET status = CASE
+          WHEN status = 'scheduled' THEN 'completed'
+          WHEN status = 'draft' THEN 'cancelled'
+          ELSE status
+        END,
+        updated_at = NOW()
+    WHERE status IN ('scheduled', 'draft')
+      AND TIMESTAMP(meeting_date, start_time) <= NOW()
+  `);
+};
+
+const isMeetingLocked = (meeting) => {
+  if (!meeting) {
+    return true;
+  }
+
+  return ['completed', 'cancelled'].includes(meeting.status);
+};
+
 const isEndTimeValid = (startTime, endTime) => {
   if (!startTime || !endTime) {
     return false;
@@ -229,6 +261,8 @@ const getMonthRange = (monthFilter) => {
 
 const index = async (req, res, next) => {
   try {
+    await syncMeetingStatuses();
+
     const currentEmployee = await getCurrentEmployee(req.session.userId);
     const canCreateMeeting = !!currentEmployee;
 
@@ -338,7 +372,8 @@ const index = async (req, res, next) => {
     const accessMessageMap = {
       employee_required: 'Akun ini tidak memiliki data pegawai sehingga tidak dapat membuat meeting.',
       meeting_denied: 'Akun ini tidak memiliki akses untuk membuka meeting tersebut.',
-      host_required: 'Hanya host meeting yang dapat mengedit atau menghapus meeting.'
+      host_required: 'Hanya host meeting yang dapat mengedit atau menghapus meeting.',
+      meeting_locked: 'Meeting yang sudah completed atau cancelled tidak dapat diedit lagi.'
     };
 
     const accessMessage = accessMessageMap[req.query.access_error] || null;
@@ -528,6 +563,8 @@ const show = async (req, res, next) => {
   const meetingId = req.params.id;
 
   try {
+    await syncMeetingStatuses();
+
     const [rows] = await db.query(
       `SELECT 
           id,
@@ -539,7 +576,8 @@ const show = async (req, res, next) => {
           end_time,
           online_link,
           status,
-          organizer_id
+          organizer_id,
+          TIMESTAMP(meeting_date, start_time) <= NOW() AS has_started
        FROM meetings
        WHERE id = ?`,
       [meetingId]
@@ -583,12 +621,24 @@ const show = async (req, res, next) => {
       ? Number(meeting.organizer_id) === Number(currentEmployee.id)
       : false;
 
+    const canEditAttendance = isHost
+      && Number(meeting.has_started) === 1
+      && meeting.status === 'completed';
+
+    const accessMessageMap = {
+      meeting_locked: 'Meeting yang sudah completed atau cancelled tidak dapat diedit lagi.'
+    };
+
+    const accessMessage = accessMessageMap[req.query.access_error] || null;
+
     res.render('meetings/show', {
       title: 'Detail Meeting',
       meeting,
       participants,
       externalParticipants,
-      isHost
+      isHost,
+      canEditAttendance,
+      accessMessage
     });
   } catch (err) {
     next(err);
@@ -603,6 +653,8 @@ const edit = async (req, res, next) => {
   const meetingId = req.params.id;
 
   try {
+    await syncMeetingStatuses();
+
     const [rows] = await db.query(
       `SELECT 
           id,
@@ -625,6 +677,10 @@ const edit = async (req, res, next) => {
     }
 
     const meeting = rows[0];
+
+    if (isMeetingLocked(meeting)) {
+      return res.redirect(`/meetings/${meetingId}?access_error=meeting_locked`);
+    }
 
     /*
       Host tidak muncul di dropdown peserta saat edit.
@@ -698,6 +754,8 @@ const update = async (req, res, next) => {
   } = req.body;
 
   try {
+    await syncMeetingStatuses();
+
     if (!title || !meeting_date || !start_time || !end_time || !meeting_type || !status) {
       return res.send('Data wajib belum lengkap. Silakan kembali dan lengkapi form.');
     }
@@ -710,6 +768,21 @@ const update = async (req, res, next) => {
 
     if (!currentEmployee) {
       return res.redirect('/meetings?access_error=employee_required');
+    }
+
+    const [meetingRows] = await db.query(
+      `SELECT id, status
+       FROM meetings
+       WHERE id = ?`,
+      [meetingId]
+    );
+
+    if (meetingRows.length === 0) {
+      return res.status(404).send('Meeting tidak ditemukan.');
+    }
+
+    if (isMeetingLocked(meetingRows[0])) {
+      return res.redirect(`/meetings/${meetingId}?access_error=meeting_locked`);
     }
 
     /*
@@ -1265,6 +1338,8 @@ const exportAttendancePdf = async (req, res, next) => {
   const meetingId = req.params.id;
 
   try {
+    await syncMeetingStatuses();
+
     const [meetingRows] = await db.query(
       `SELECT
           m.id,

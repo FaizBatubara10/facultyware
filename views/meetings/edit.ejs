@@ -36,13 +36,75 @@
 
   body {
     overflow: hidden;
+    background: #f4f1eb !important;
   }
 
   .edit-page-background {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    width: 100vw;
     height: 100vh;
-    background: #0c0c0e;
-    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 16px;
+    background: #f4f1eb;
+    color: #111111;
     overflow: hidden;
+  }
+
+  .edit-page-background::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.46);
+    backdrop-filter: blur(1.5px);
+  }
+
+  .modal-live-background {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    pointer-events: none;
+    background: #f4f1eb;
+  }
+
+  /*
+    Background edit dibuat menyerupai halaman detail meeting,
+    jadi modal edit tidak lagi terasa muncul di atas halaman hitam.
+  */
+  .edit-page-background .text-white {
+    color: #111111 !important;
+  }
+
+  .edit-page-background .text-zinc-400,
+  .edit-page-background .text-zinc-500 {
+    color: #746d62 !important;
+  }
+
+  .edit-page-background .bg-white {
+    background: #fffdf9 !important;
+  }
+
+  .edit-page-background .bg-zinc-50 {
+    background: #f8f5ef !important;
+  }
+
+  .edit-page-background .border-zinc-200 {
+    border-color: #ded8cd !important;
+  }
+
+  .edit-page-background .bg-emerald-50 {
+    background: #e6f5ee !important;
+  }
+
+  .edit-page-background .text-emerald-700 {
+    color: #2f765d !important;
   }
 
   .edit-backdrop {
@@ -53,18 +115,22 @@
     justify-content: center;
     align-items: center;
     padding: 24px 16px;
-    background: rgba(0, 0, 0, 0.65);
+    background: rgba(0, 0, 0, 0.46);
+    backdrop-filter: blur(1.5px);
     overflow: hidden;
   }
 
   .edit-modal {
+    position: relative;
+    z-index: 2;
     width: 100%;
-    max-width: 640px;
+    max-width: 680px;
     max-height: calc(100vh - 48px);
-    background: #ffffff;
+    background: #fffdf9;
     color: #222222;
+    border: 1px solid #ded8cd;
     border-radius: 18px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    box-shadow: 0 20px 60px rgba(30, 28, 24, 0.18);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -73,29 +139,36 @@
   .edit-modal-header {
     flex-shrink: 0;
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px 24px 14px;
+    border-bottom: 1px solid #eee8de;
+    background: rgba(255, 253, 249, 0.98);
+    box-shadow: 0 8px 22px rgba(30, 28, 24, 0.05);
+    z-index: 5;
+  }
+
+  .edit-back-link {
+    display: inline-flex;
     align-items: center;
-    padding: 22px 28px;
-    border-bottom: 1px solid #e5e5e5;
-    background: #ffffff;
+    gap: 8px;
+    width: fit-content;
+    text-decoration: none;
+    color: #2f6f4e;
+    font-size: 13px;
+    font-weight: 800;
+  }
+
+  .edit-back-link:hover {
+    color: #24583f;
   }
 
   .edit-modal-header h1 {
     margin: 0;
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 20px;
+    font-weight: 800;
     color: #222222;
-  }
-
-  .edit-close {
-    text-decoration: none;
-    font-size: 28px;
-    color: #777777;
-    line-height: 1;
-  }
-
-  .edit-close:hover {
-    color: #222222;
+    letter-spacing: -0.02em;
   }
 
   .edit-form {
@@ -106,7 +179,7 @@
   }
 
   .edit-form-body {
-    padding: 24px 28px;
+    padding: 20px 24px;
     overflow-y: auto;
     min-height: 0;
   }
@@ -117,9 +190,9 @@
     justify-content: flex-end;
     align-items: center;
     gap: 10px;
-    padding: 18px 28px;
-    border-top: 1px solid #e5e5e5;
-    background: #ffffff;
+    padding: 16px 24px;
+    border-top: 1px solid #eee8de;
+    background: #fffdf9;
   }
 
   .form-group {
@@ -144,7 +217,7 @@
   .form-control {
     width: 100%;
     padding: 12px 14px;
-    border: 1px solid #d0d0d0;
+    border: 1px solid #ded8cd;
     border-radius: 9px;
     font-size: 14px;
     color: #222222;
@@ -154,8 +227,8 @@
   }
 
   .form-control:focus {
-    border-color: #2f6f4e;
-    box-shadow: 0 0 0 2px rgba(47, 111, 78, 0.12);
+    border-color: #2f765d;
+    box-shadow: 0 0 0 3px rgba(47, 118, 93, 0.12);
   }
 
   textarea.form-control {
@@ -185,7 +258,7 @@
   .time-display-input {
     width: 100%;
     padding: 12px 42px 12px 14px;
-    border: 1px solid #d0d0d0;
+    border: 1px solid #ded8cd;
     border-radius: 9px;
     font-size: 14px;
     color: #222222;
@@ -196,8 +269,8 @@
   }
 
   .time-display-input:focus {
-    border-color: #2f6f4e;
-    box-shadow: 0 0 0 2px rgba(47, 111, 78, 0.12);
+    border-color: #2f765d;
+    box-shadow: 0 0 0 3px rgba(47, 118, 93, 0.12);
   }
 
   .time-icon {
@@ -220,8 +293,8 @@
     z-index: 10000;
     width: 320px;
     max-width: calc(100vw - 32px);
-    background: #ffffff;
-    border: 1px solid #d0d0d0;
+    background: #fffdf9;
+    border: 1px solid #ded8cd;
     border-radius: 12px;
     box-shadow: 0 18px 40px rgba(0, 0, 0, 0.20);
     padding: 14px;
@@ -256,7 +329,7 @@
   .time-column-label {
     position: sticky;
     top: 0;
-    background: #ffffff;
+    background: #fffdf9;
     padding: 4px 6px 8px;
     font-size: 11px;
     font-weight: 700;
@@ -301,9 +374,9 @@
 
   .btn-add-participant {
     padding: 0 18px;
-    border: 1px solid #d0d0d0;
+    border: 1px solid #ded8cd;
     border-radius: 9px;
-    background: #ffffff;
+    background: #fffdf9;
     color: #222222;
     font-size: 14px;
     cursor: pointer;
@@ -388,9 +461,9 @@
 
   .btn-cancel {
     padding: 11px 18px;
-    border: 1px solid #d0d0d0;
+    border: 1px solid #ded8cd;
     border-radius: 9px;
-    background: #ffffff;
+    background: #fffdf9;
     color: #222222;
     text-decoration: none;
     font-size: 14px;
@@ -501,106 +574,20 @@
 </style>
 
 <div class="edit-page-background">
-  <div class="p-4 md:p-6 xl:p-8">
-    <div class="max-w-5xl mx-auto">
-      <div class="mb-6">
-        <a
-          href="/meetings"
-          class="inline-flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-sm font-semibold"
-        >
-          <span class="text-xl leading-none">←</span>
-          <span>Kembali ke Daftar Meeting</span>
-        </a>
-      </div>
-
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight text-white opacity-90">
-            Detail Meeting
-          </h1>
-
-          <p class="text-zinc-400 text-sm mt-1">
-            Informasi meeting yang sedang diedit.
-          </p>
-        </div>
-      </div>
-
-      <div class="bg-white text-zinc-900 rounded-2xl border border-zinc-200 shadow-sm overflow-hidden">
-        <div class="p-6 border-b border-zinc-200">
-          <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-            <div>
-              <div class="flex flex-wrap items-center gap-2 mb-3">
-                <span class="capitalize px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
-                  <%= meeting.status %>
-                </span>
-
-                <span class="capitalize px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
-                  <%= meeting.meeting_type %>
-                </span>
-              </div>
-
-              <h2 class="text-2xl md:text-3xl font-bold text-zinc-900">
-                <%= meeting.title %>
-              </h2>
-
-              <p class="text-zinc-500 mt-3 leading-relaxed">
-                <%= meeting.description || 'Tidak ada deskripsi atau agenda untuk meeting ini.' %>
-              </p>
-            </div>
-
-            <div class="w-20 h-20 rounded-2xl bg-emerald-50 flex flex-col items-center justify-center shrink-0">
-              <div class="text-xs font-bold text-zinc-400 uppercase">
-                <%= new Date(meeting.meeting_date).toLocaleDateString('id-ID', { month: 'short' }) %>
-              </div>
-
-              <div class="text-3xl font-black text-emerald-700 leading-none">
-                <%= new Date(meeting.meeting_date).getDate() %>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div class="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-            <p class="text-xs font-bold text-zinc-400 uppercase mb-1">Tanggal</p>
-            <p class="font-bold text-zinc-900">
-              <%= new Date(meeting.meeting_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }) %>
-            </p>
-          </div>
-
-          <div class="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-            <p class="text-xs font-bold text-zinc-400 uppercase mb-1">Waktu Meeting</p>
-            <p class="font-bold text-zinc-900">
-              <%= meetingStartTime %> - <%= meetingEndTime %>
-            </p>
-          </div>
-
-          <div class="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-            <p class="text-xs font-bold text-zinc-400 uppercase mb-1">Tipe</p>
-            <p class="capitalize font-bold text-zinc-900">
-              <%= meeting.meeting_type %>
-            </p>
-          </div>
-
-          <div class="rounded-xl border border-zinc-200 p-4 bg-zinc-50">
-            <p class="text-xs font-bold text-zinc-400 uppercase mb-1">Lokasi / Link</p>
-            <p class="font-bold text-zinc-900">
-              <%= meeting.online_link || '-' %>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="edit-backdrop">
+  <iframe
+    class="modal-live-background"
+    src="/meetings/<%= meeting.id %>"
+    aria-hidden="true"
+    tabindex="-1"
+  ></iframe>
     <div class="edit-modal">
       <div class="edit-modal-header">
-        <h1>Edit Meeting</h1>
-
-        <a href="/meetings/<%= meeting.id %>" class="edit-close">
-          &times;
+        <a href="/meetings/<%= meeting.id %>" class="edit-back-link">
+          <span>←</span>
+          <span>Kembali ke Detail Meeting</span>
         </a>
+
+        <h1>Edit Meeting</h1>
       </div>
 
       <form action="/meetings/<%= meeting.id %>/edit" method="POST" class="edit-form">

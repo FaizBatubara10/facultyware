@@ -9,6 +9,7 @@
 
     body {
         overflow: hidden;
+        background: #f4f1eb !important;
     }
 
     .create-meeting-page {
@@ -19,17 +20,189 @@
         justify-content: center;
         align-items: center;
         padding: 24px 16px;
-        background: rgba(0, 0, 0, 0.45);
+        background: #f4f1eb;
         overflow: hidden;
     }
 
-    .meeting-modal {
+    .modal-live-background {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
         width: 100%;
-        max-width: 720px;
-        max-height: calc(100vh - 48px);
-        background: #ffffff;
+        height: 100%;
+        border: 0;
+        pointer-events: none;
+        background: #f4f1eb;
+    }
+
+    /*
+        Background dibuat sebagai preview halaman daftar meeting.
+        Lapisan hitam transparan dipakai supaya tetap terlihat seperti modal,
+        tetapi daftar meeting di belakangnya masih kelihatan.
+    */
+    .create-bg-preview {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        padding: 34px 70px;
+        background: #f4f1eb;
+        color: #111111;
+        overflow: hidden;
+        pointer-events: none;
+    }
+
+    .create-bg-preview-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 34px;
+    }
+
+    .create-bg-preview-title {
+        font-size: 28px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+    }
+
+    .create-bg-preview-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .create-bg-preview-pill,
+    .create-bg-preview-primary {
+        height: 42px;
+        padding: 0 18px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 700;
+        border: 1px solid #ded8cd;
+        background: #fffdf9;
+    }
+
+    .create-bg-preview-primary {
+        background: #2f6f4e;
+        border-color: #2f6f4e;
+        color: #ffffff;
+    }
+
+    .create-bg-preview-filter {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 26px;
+    }
+
+    .create-bg-preview-search,
+    .create-bg-preview-select {
+        height: 48px;
+        border-radius: 14px;
+        background: #fffdf9;
+        border: 1px solid #d8d1c6;
+        color: #8b8174;
+        display: flex;
+        align-items: center;
+        font-size: 15px;
+        font-weight: 600;
+        padding: 0 18px;
+    }
+
+    .create-bg-preview-search {
+        width: 360px;
+    }
+
+    .create-bg-preview-select {
+        width: 180px;
+    }
+
+    .create-bg-preview-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+
+    .create-bg-preview-card {
+        height: 84px;
         border-radius: 16px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+        border: 1px solid #ded8cd;
+        background: #fffdf9;
+        display: grid;
+        grid-template-columns: 64px 1fr auto;
+        align-items: center;
+        gap: 18px;
+        padding: 14px 22px;
+        box-shadow: 0 8px 24px rgba(30, 28, 24, 0.04);
+    }
+
+    .create-bg-preview-date {
+        width: 58px;
+        height: 58px;
+        border-radius: 14px;
+        background: #e5f3ee;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #2f6f4e;
+        font-weight: 900;
+    }
+
+    .create-bg-preview-date span:first-child {
+        color: #8b8174;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+    }
+
+    .create-bg-preview-date span:last-child {
+        font-size: 24px;
+        line-height: 1;
+    }
+
+    .create-bg-preview-card-title {
+        font-size: 17px;
+        font-weight: 800;
+        margin-bottom: 6px;
+    }
+
+    .create-bg-preview-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        color: #8b8174;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .create-bg-preview-badge {
+        border-radius: 999px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 800;
+        background: #e5f3ee;
+        color: #2f6f4e;
+    }
+
+    .create-meeting-page::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        background: rgba(0, 0, 0, 0.46);
+        backdrop-filter: blur(1.5px);
+    }
+
+    .meeting-modal {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        max-width: 700px;
+        max-height: calc(100vh - 48px);
+        background: #fffdf9;
+        border: 1px solid #ded8cd;
+        border-radius: 18px;
+        box-shadow: 0 20px 60px rgba(30, 28, 24, 0.18);
         overflow: hidden;
         display: flex;
         flex-direction: column;
@@ -38,29 +211,36 @@
     .meeting-modal-header {
         flex-shrink: 0;
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
+        gap: 8px;
+        padding: 16px 24px 14px;
+        border-bottom: 1px solid #eee8de;
+        background: rgba(255, 253, 249, 0.98);
+        box-shadow: 0 8px 22px rgba(30, 28, 24, 0.05);
+        z-index: 5;
+    }
+
+    .modal-back-link {
+        display: inline-flex;
         align-items: center;
-        padding: 22px 28px;
-        border-bottom: 1px solid #e5e5e5;
-        background: #ffffff;
+        gap: 8px;
+        width: fit-content;
+        text-decoration: none;
+        color: #2f6f4e;
+        font-size: 13px;
+        font-weight: 800;
+    }
+
+    .modal-back-link:hover {
+        color: #24583f;
     }
 
     .meeting-modal-header h1 {
         margin: 0;
-        font-size: 22px;
-        font-weight: 700;
+        font-size: 20px;
+        font-weight: 800;
         color: #222222;
-    }
-
-    .close-link {
-        text-decoration: none;
-        font-size: 28px;
-        color: #777777;
-        line-height: 1;
-    }
-
-    .close-link:hover {
-        color: #222222;
+        letter-spacing: -0.02em;
     }
 
     .meeting-form {
@@ -71,7 +251,7 @@
     }
 
     .meeting-form-body {
-        padding: 24px 28px;
+        padding: 20px 24px;
         overflow-y: auto;
         min-height: 0;
     }
@@ -82,9 +262,9 @@
         justify-content: flex-end;
         align-items: center;
         gap: 10px;
-        padding: 18px 28px;
-        border-top: 1px solid #e5e5e5;
-        background: #ffffff;
+        padding: 16px 24px;
+        border-top: 1px solid #eee8de;
+        background: #fffdf9;
     }
 
     .form-group {
@@ -109,7 +289,7 @@
     .form-control {
         width: 100%;
         padding: 12px 14px;
-        border: 1px solid #d0d0d0;
+        border: 1px solid #ded8cd;
         border-radius: 9px;
         font-size: 14px;
         color: #222222;
@@ -119,8 +299,8 @@
     }
 
     .form-control:focus {
-        border-color: #2f6f4e;
-        box-shadow: 0 0 0 2px rgba(47, 111, 78, 0.12);
+        border-color: #2f765d;
+        box-shadow: 0 0 0 3px rgba(47, 118, 93, 0.12);
     }
 
     textarea.form-control {
@@ -149,7 +329,7 @@
     .time-display-input {
         width: 100%;
         padding: 12px 42px 12px 14px;
-        border: 1px solid #d0d0d0;
+        border: 1px solid #ded8cd;
         border-radius: 9px;
         font-size: 14px;
         color: #222222;
@@ -160,8 +340,8 @@
     }
 
     .time-display-input:focus {
-        border-color: #2f6f4e;
-        box-shadow: 0 0 0 2px rgba(47, 111, 78, 0.12);
+        border-color: #2f765d;
+        box-shadow: 0 0 0 3px rgba(47, 118, 93, 0.12);
     }
 
     .time-icon {
@@ -184,8 +364,8 @@
         z-index: 10000;
         width: 320px;
         max-width: calc(100vw - 32px);
-        background: #ffffff;
-        border: 1px solid #d0d0d0;
+        background: #fffdf9;
+        border: 1px solid #ded8cd;
         border-radius: 12px;
         box-shadow: 0 18px 40px rgba(0, 0, 0, 0.20);
         padding: 14px;
@@ -220,7 +400,7 @@
     .time-column-label {
         position: sticky;
         top: 0;
-        background: #ffffff;
+        background: #fffdf9;
         padding: 4px 6px 8px;
         font-size: 11px;
         font-weight: 700;
@@ -265,9 +445,9 @@
 
     .btn-add-participant {
         padding: 0 18px;
-        border: 1px solid #d0d0d0;
+        border: 1px solid #ded8cd;
         border-radius: 9px;
-        background: #ffffff;
+        background: #fffdf9;
         color: #222222;
         font-size: 14px;
         cursor: pointer;
@@ -325,9 +505,9 @@
 
     .btn-draft {
         padding: 11px 18px;
-        border: 1px solid #d0d0d0;
+        border: 1px solid #ded8cd;
         border-radius: 9px;
-        background: #ffffff;
+        background: #fffdf9;
         color: #222222;
         font-size: 14px;
         cursor: pointer;
@@ -439,13 +619,21 @@
 </style>
 
 <div class="create-meeting-page">
+    <iframe
+        class="modal-live-background"
+        src="/meetings"
+        aria-hidden="true"
+        tabindex="-1"
+    ></iframe>
+
     <div class="meeting-modal">
         <div class="meeting-modal-header">
-            <h1>Buat Meeting Baru</h1>
-
-            <a href="/meetings" class="close-link">
-                &times;
+            <a href="/meetings" class="modal-back-link">
+                <span>←</span>
+                <span>Kembali ke Daftar Meeting</span>
             </a>
+
+            <h1>Buat Meeting Baru</h1>
         </div>
 
         <form action="/meetings" method="POST" class="meeting-form">

@@ -20,7 +20,7 @@
 
     return date.toLocaleDateString('id-ID', {
       month: 'short'
-    });
+    }).toUpperCase();
   }
 
   function getDayNumber(dateValue) {
@@ -30,7 +30,7 @@
       return '-';
     }
 
-    return date.getDate();
+    return String(date.getDate()).padStart(2, '0');
   }
 
   function formatTime(timeValue) {
@@ -53,6 +53,54 @@
     return 'Ruang Meeting';
   }
 
+  function getMeetingTypeIcon(type) {
+    if (type === 'online') {
+      return '🌐';
+    }
+
+    if (type === 'hybrid') {
+      return '🔀';
+    }
+
+    return '📍';
+  }
+
+  function getStatusBadge(meeting) {
+    const status = meeting.status;
+    const date = getDateObject(meeting.meeting_date);
+
+    if (status === 'completed') {
+      return { label: 'Selesai', className: 'meeting-badge meeting-badge-success' };
+    }
+
+    if (status === 'cancelled') {
+      return { label: 'Dibatalkan', className: 'meeting-badge meeting-badge-danger' };
+    }
+
+    if (status === 'draft') {
+      return { label: 'Draft', className: 'meeting-badge meeting-badge-muted' };
+    }
+
+    if (!date) {
+      return { label: 'Scheduled', className: 'meeting-badge meeting-badge-success' };
+    }
+
+    const today = new Date();
+    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const meetingOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const diffDays = Math.ceil((meetingOnly - todayOnly) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) {
+      return { label: 'Hari Ini', className: 'meeting-badge meeting-badge-success' };
+    }
+
+    if (diffDays > 0) {
+      return { label: diffDays + ' Hari Lagi', className: diffDays <= 7 ? 'meeting-badge meeting-badge-warning' : 'meeting-badge meeting-badge-danger-soft' };
+    }
+
+    return { label: 'Scheduled', className: 'meeting-badge meeting-badge-success' };
+  }
+
   function getStatusLabel(status) {
     if (status === 'scheduled') {
       return 'Scheduled';
@@ -67,6 +115,22 @@
     }
 
     return 'Draft';
+  }
+
+  function getStatusPillClass(status) {
+    if (status === 'scheduled') {
+      return 'meeting-status-pill meeting-status-scheduled';
+    }
+
+    if (status === 'completed') {
+      return 'meeting-status-pill meeting-status-completed';
+    }
+
+    if (status === 'cancelled') {
+      return 'meeting-status-pill meeting-status-cancelled';
+    }
+
+    return 'meeting-status-pill meeting-status-draft';
   }
 
   function buildPageUrl(pageNumber) {
@@ -91,79 +155,572 @@
 %>
 
 <style>
-  .filter-bar {
+  body {
+    background: #f4f1eb !important;
+  }
+
+  .meeting-page-shell {
+    min-height: calc(100vh - 72px);
+    background: #f4f1eb !important;
+    color: #171717;
+  }
+
+  .meeting-page-shell * {
+    box-sizing: border-box;
+  }
+
+  .meeting-page-content {
+    width: min(100%, 1440px);
+    margin: 0 auto;
+    padding: 18px 22px 30px;
+  }
+
+  .meeting-header-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-bottom: 28px;
     align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
   }
 
-  .filter-bar input,
-  .filter-bar select {
-    flex: 1;
-    min-width: 180px;
+  .meeting-title {
+    margin: 0;
+    font-size: 24px;
+    line-height: 1.15;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    color: #111111;
   }
 
-  .filter-action-button {
-    border: none;
-    cursor: pointer;
+  .meeting-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .meeting-top-button,
+  .meeting-create-button {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 12px;
+    padding: 0 15px;
+    font-size: 12.5px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 0.2s ease;
     white-space: nowrap;
+  }
+
+  .meeting-top-button {
+    border: 1px solid #d7d2c8;
+    background: #fffdf9;
+    color: #111111;
+  }
+
+  .meeting-top-button:hover {
+    background: #ffffff;
+    box-shadow: 0 8px 20px rgba(17, 17, 17, 0.06);
+  }
+
+  .meeting-create-button {
+    border: 1px solid #2f765d;
+    background: #2f765d;
+    color: #ffffff;
+    box-shadow: 0 10px 22px rgba(47, 118, 93, 0.18);
+  }
+
+  .meeting-create-button:hover {
+    background: #27634f;
+  }
+
+  .meeting-filter-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+  }
+
+  .meeting-search-box {
+    position: relative;
+    flex: 1 1 300px;
+    max-width: 380px;
+  }
+
+  .meeting-search-box span {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12.5px;
+    opacity: 0.85;
+  }
+
+  .meeting-search-box input,
+  .meeting-filter-select {
+    height: 42px;
+    border-radius: 11px;
+    border: 1px solid #d7d2c8;
+    background: #fffdf9;
+    color: #222222;
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .meeting-search-box input {
+    width: 100%;
+    padding: 0 14px 0 42px;
+  }
+
+  .meeting-filter-select {
+    min-width: 150px;
+    padding: 0 13px;
+    cursor: pointer;
+  }
+
+  .meeting-search-box input:focus,
+  .meeting-filter-select:focus {
+    border-color: #2f765d;
+    box-shadow: 0 0 0 4px rgba(47, 118, 93, 0.12);
+  }
+
+  .meeting-filter-submit {
+    height: 42px;
+    border: none;
+    border-radius: 11px;
+    padding: 0 15px;
+    background: #2f765d;
+    color: #ffffff;
+    font-size: 12.5px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .meeting-filter-submit:hover {
+    background: #27634f;
+  }
+
+  .meeting-alert {
+    margin-bottom: 18px;
+    border-radius: 14px;
+    border: 1px solid #fecaca;
+    background: #fff1f2;
+    color: #b91c1c;
+    padding: 12px 16px;
+    font-size: 12.5px;
+    font-weight: 800;
+  }
+
+  .meeting-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .meeting-card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 18px;
+    min-height: 78px;
+    border: 1px solid #ded8cd;
+    border-radius: 15px;
+    background: #fffdf9;
+    padding: 11px 14px;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+
+  .meeting-card:hover {
+    transform: translateY(-1px);
+    border-color: #cfc6b8;
+    box-shadow: 0 12px 24px rgba(30, 28, 24, 0.07);
+  }
+
+  .meeting-main-link {
+    min-width: 0;
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
+    align-items: center;
+    gap: 14px;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .meeting-date-box {
+    width: 54px;
+    height: 54px;
+    border-radius: 13px;
+    background: #e6f5ee;
+    color: #2f765d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .meeting-date-box.completed,
+  .meeting-date-box.cancelled,
+  .meeting-date-box.draft {
+    background: #eeeae2;
+    color: #111111;
+  }
+
+  .meeting-date-month {
+    font-size: 10.5px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    color: #8d887f;
+  }
+
+  .meeting-date-day {
+    margin-top: 6px;
+    font-size: 24px;
+    line-height: 0.85;
+    font-weight: 950;
+    letter-spacing: -0.08em;
+  }
+
+  .meeting-info {
+    min-width: 0;
+  }
+
+  .meeting-card-title {
+    margin: 0;
+    color: #111111;
+    font-size: 16.5px;
+    line-height: 1.2;
+    font-weight: 850;
+    letter-spacing: -0.025em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .meeting-main-link:hover .meeting-card-title {
+    color: #2f765d;
+  }
+
+  .meeting-meta-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 15px;
+    margin-top: 8px;
+    color: #8d887f;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .meeting-meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+
+  .meeting-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .meeting-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 24px;
+    padding: 0 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 850;
+    white-space: nowrap;
+  }
+
+  .meeting-badge-success {
+    background: #e4f5ec;
+    color: #1f6e4c;
+  }
+
+  .meeting-badge-warning {
+    background: #f2eee8;
+    color: #705d42;
+  }
+
+  .meeting-badge-danger-soft {
+    background: #fff0ea;
+    color: #d84a1f;
+  }
+
+  .meeting-badge-danger {
+    background: #fff1f2;
+    color: #be123c;
+  }
+
+  .meeting-badge-muted {
+    background: #eeeae2;
+    color: #625b50;
+  }
+
+  .meeting-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 22px;
+    padding: 0 9px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 850;
+    line-height: 1;
+    white-space: nowrap;
+  }
+
+  .meeting-status-scheduled {
+    background: #e4f5ec;
+    color: #1f6e4c;
+  }
+
+  .meeting-status-completed {
+    background: #ece8df;
+    color: #625b50;
+  }
+
+  .meeting-status-cancelled {
+    background: #fff1f2;
+    color: #be123c;
+  }
+
+  .meeting-status-draft {
+    background: #fff7df;
+    color: #a06000;
+  }
+
+  .meeting-card-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 32px;
+    padding: 0 11px;
+    border-radius: 10px;
+    border: 1px solid #d7d2c8;
+    background: #fffdf9;
+    color: #111111;
+    font-size: 12.5px;
+    font-weight: 800;
+    text-decoration: none;
+    transition: background 0.18s ease, box-shadow 0.18s ease;
+    white-space: nowrap;
+  }
+
+  .meeting-card-button:hover {
+    background: #ffffff;
+    box-shadow: 0 8px 18px rgba(17, 17, 17, 0.06);
+  }
+
+  .meeting-empty-state {
+    border: 1px dashed #cfc6b8;
+    border-radius: 16px;
+    background: #fffdf9;
+    padding: 36px 22px;
+    text-align: center;
+  }
+
+  .meeting-empty-state h2 {
+    margin: 0;
+    font-size: 16.5px;
+    font-weight: 900;
+    color: #111111;
+  }
+
+  .meeting-empty-state p {
+    margin: 8px 0 0;
+    color: #8d887f;
+    font-size: 12.5px;
+    font-weight: 600;
+  }
+
+  .meeting-pagination {
+    margin-top: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .meeting-pagination p {
+    margin: 0;
+    color: #7a746b;
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+
+  .meeting-pagination-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .meeting-page-link {
+    min-width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 1px solid #d7d2c8;
+    background: #fffdf9;
+    color: #111111;
+    text-decoration: none;
+    font-size: 12.5px;
+    font-weight: 850;
+  }
+
+  .meeting-page-link.active {
+    border-color: #2f765d;
+    background: #2f765d;
+    color: #ffffff;
+  }
+
+  .meeting-page-link:hover:not(.active) {
+    background: #ffffff;
+  }
+
+  @media (max-width: 1100px) {
+    .meeting-card {
+      grid-template-columns: 1fr;
+    }
+
+    .meeting-actions {
+      justify-content: flex-start;
+      padding-left: 68px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .meeting-page-content {
+      padding: 20px 16px 32px;
+    }
+
+    .meeting-header-row {
+      align-items: flex-start;
+      flex-direction: column;
+      margin-bottom: 20px;
+    }
+
+    .meeting-title {
+      font-size: 24px;
+    }
+
+    .meeting-header-actions,
+    .meeting-top-button,
+    .meeting-create-button,
+    .meeting-search-box,
+    .meeting-filter-select,
+    .meeting-filter-submit {
+      width: 100%;
+      max-width: none;
+    }
+
+    .meeting-main-link {
+      grid-template-columns: 52px minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .meeting-card {
+      padding: 16px;
+    }
+
+    .meeting-date-box {
+      width: 52px;
+      height: 52px;
+    }
+
+    .meeting-date-day {
+      font-size: 24px;
+    }
+
+    .meeting-card-title {
+      font-size: 17px;
+    }
+
+    .meeting-meta-row {
+      font-size: 12.5px;
+      gap: 7px 10px;
+    }
+
+    .meeting-actions {
+      padding-left: 64px;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .meeting-main-link {
+      grid-template-columns: 1fr;
+    }
+
+    .meeting-actions {
+      width: 100%;
+      padding-left: 0;
+      justify-content: flex-start;
+    }
+
+    .meeting-card-button {
+      flex: 1 1 120px;
+    }
   }
 </style>
 
-<div class="text-zinc-900 dark:text-zinc-100">
-  <div class="max-w-5xl mx-auto px-4 md:px-6 py-6">
+<div class="meeting-page-shell">
+  <div class="meeting-page-content">
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-      <div>
-        <h1 class="text-3xl font-black tracking-tight text-zinc-950 dark:text-zinc-100">
-          Daftar Meeting
-        </h1>
+    <div class="meeting-header-row">
+      <h1 class="meeting-title">Daftar Meeting</h1>
 
-        <p class="text-zinc-500 dark:text-zinc-400 text-sm mt-1">
-          Kelola dan lihat jadwal rapat yang dibuat atau mengundang akun Anda.
-        </p>
-      </div>
+      <div class="meeting-header-actions">
+        <a href="/meetings" class="meeting-top-button">
+          <span>🗓️</span>
+          <span>Semua Rapat</span>
+        </a>
 
-      <div class="flex flex-wrap items-center gap-3">
         <% if (typeof canCreateMeeting !== 'undefined' && canCreateMeeting) { %>
-          <a
-            href="/meetings/create"
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-600 transition-colors shadow-sm"
-          >
+          <a href="/meetings/create" class="meeting-create-button">
             <span>+</span>
-            Buat Meeting
+            <span>Buat Meeting</span>
           </a>
         <% } %>
       </div>
     </div>
 
     <% if (typeof accessMessage !== 'undefined' && accessMessage) { %>
-      <div class="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+      <div class="meeting-alert">
         <%= accessMessage %>
       </div>
     <% } %>
 
-    <form action="/meetings" method="GET" class="filter-bar">
-      <div class="relative w-full lg:max-w-md">
-        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg">
-          🔍
-        </span>
-
+    <form action="/meetings" method="GET" class="meeting-filter-form">
+      <div class="meeting-search-box">
+        <span>🔍</span>
         <input
           type="text"
           name="q"
           value="<%= filterData.q || '' %>"
           placeholder="Cari meeting..."
-          class="w-full rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 py-3 pl-11 pr-4 text-sm text-zinc-700 dark:text-zinc-100 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900"
         >
       </div>
 
-      <select
-        name="status"
-        class="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-zinc-800 dark:text-zinc-100 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900"
-      >
+      <select name="status" class="meeting-filter-select" onchange="this.form.submit()">
         <option value="all" <%= filterData.status === 'all' ? 'selected' : '' %>>Semua Status</option>
         <option value="draft" <%= filterData.status === 'draft' ? 'selected' : '' %>>Draft</option>
         <option value="scheduled" <%= filterData.status === 'scheduled' ? 'selected' : '' %>>Scheduled</option>
@@ -171,154 +728,87 @@
         <option value="cancelled" <%= filterData.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
       </select>
 
-      <select
-        name="month"
-        class="rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3 text-sm text-zinc-800 dark:text-zinc-100 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-100 dark:focus:ring-emerald-900"
-      >
+      <select name="month" class="meeting-filter-select" onchange="this.form.submit()">
         <option value="all" <%= filterData.month === 'all' ? 'selected' : '' %>>Semua Bulan</option>
         <option value="this_month" <%= filterData.month === 'this_month' ? 'selected' : '' %>>Bulan Ini</option>
         <option value="next_month" <%= filterData.month === 'next_month' ? 'selected' : '' %>>Bulan Depan</option>
       </select>
 
-      <button
-        type="submit"
-        class="filter-action-button rounded-xl bg-emerald-700 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-600 transition-colors"
-      >
-        Terapkan
-      </button>
-
-      <a
-        href="/meetings"
-        class="inline-flex items-center justify-center rounded-xl border border-zinc-300 dark:border-zinc-700 px-5 py-3 text-sm font-bold text-zinc-700 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-      >
-        Reset
-      </a>
+      <button type="submit" class="meeting-filter-submit">Cari</button>
     </form>
 
-    <div class="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
-      Menampilkan <strong><%= meetings ? meetings.length : 0 %></strong> dari <strong><%= paginationData.totalItems || 0 %></strong> meeting.
-    </div>
-
-    <div id="meetingList" class="space-y-4">
-
+    <div class="meeting-list">
       <% if (meetings && meetings.length > 0) { %>
-
         <% meetings.forEach(function(meeting) { %>
-          <div
-            onclick="window.location.href='/meetings/<%= meeting.id %>'"
-            class="meeting-card group cursor-pointer rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-200 dark:hover:border-emerald-700 hover:shadow-md"
-          >
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <% const statusBadge = getStatusBadge(meeting); %>
 
-              <div class="flex items-start gap-5 min-w-0">
-
-                <div class="flex h-20 w-20 shrink-0 flex-col items-center justify-center rounded-2xl
-                  <%= meeting.status === 'completed' ? 'bg-zinc-100 dark:bg-zinc-800' : 'bg-emerald-50 dark:bg-emerald-950' %>"
-                >
-                  <div class="text-xs font-bold uppercase tracking-wide text-zinc-400">
-                    <%= getMonthName(meeting.meeting_date) %>
-                  </div>
-
-                  <div class="text-3xl font-black leading-none
-                    <%= meeting.status === 'completed' ? 'text-zinc-800 dark:text-zinc-200' : 'text-emerald-700 dark:text-emerald-300' %>"
-                  >
-                    <%= getDayNumber(meeting.meeting_date) %>
-                  </div>
-                </div>
-
-                <div class="min-w-0 pt-1">
-                  <h2 class="text-xl font-black text-zinc-950 dark:text-zinc-100 group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition-colors">
-                    <%= meeting.title %>
-                  </h2>
-
-                  <div class="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-zinc-500 dark:text-zinc-400">
-
-                    <span class="inline-flex items-center gap-1.5">
-                      <span>⏰</span>
-                      <%= formatTime(meeting.start_time) %> - <%= formatTime(meeting.end_time) %>
-                    </span>
-
-                    <span class="inline-flex items-center gap-1.5">
-                      <span>📍</span>
-                      <%= getMeetingTypeLabel(meeting.meeting_type) %>
-                    </span>
-
-                    <span class="inline-flex items-center gap-1.5">
-                      <span>👥</span>
-                      <%= meeting.participant_count || 0 %> orang
-                    </span>
-
-                    <span class="inline-flex items-center gap-1.5 capitalize">
-                      <span>🏷️</span>
-                      <%= meeting.meeting_type || '-' %>
-                    </span>
-
-                  </div>
-
-                  <% if (meeting.description) { %>
-                    <p class="mt-2 text-sm text-zinc-400 dark:text-zinc-500 line-clamp-1">
-                      <%= meeting.description %>
-                    </p>
-                  <% } %>
-                </div>
-
+          <div class="meeting-card">
+            <a href="/meetings/<%= meeting.id %>" class="meeting-main-link" aria-label="Buka detail <%= meeting.title %>">
+              <div class="meeting-date-box <%= meeting.status %>">
+                <div class="meeting-date-month"><%= getMonthName(meeting.meeting_date) %></div>
+                <div class="meeting-date-day"><%= getDayNumber(meeting.meeting_date) %></div>
               </div>
 
-              <div class="flex shrink-0 items-center gap-3 lg:justify-end">
+              <div class="meeting-info">
+                <h2 class="meeting-card-title"><%= meeting.title %></h2>
 
-                <% if (meeting.status === 'scheduled') { %>
-                  <span class="rounded-full bg-emerald-50 dark:bg-emerald-950 px-4 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                    Scheduled
+                <div class="meeting-meta-row">
+                  <span class="meeting-meta-item">
+                    <span>⏰</span>
+                    <span><%= formatTime(meeting.start_time) %> – <%= formatTime(meeting.end_time) %></span>
                   </span>
-                <% } else if (meeting.status === 'completed') { %>
-                  <span class="rounded-full bg-zinc-100 dark:bg-zinc-800 px-4 py-1.5 text-xs font-bold text-zinc-600 dark:text-zinc-300">
-                    Completed
-                  </span>
-                <% } else if (meeting.status === 'cancelled') { %>
-                  <span class="rounded-full bg-red-50 dark:bg-red-950 px-4 py-1.5 text-xs font-bold text-red-600 dark:text-red-300">
-                    Cancelled
-                  </span>
-                <% } else { %>
-                  <span class="rounded-full bg-amber-50 dark:bg-amber-950 px-4 py-1.5 text-xs font-bold text-amber-700 dark:text-amber-300">
-                    Draft
-                  </span>
-                <% } %>
 
+                  <span class="meeting-meta-item">
+                    <span><%= getMeetingTypeIcon(meeting.meeting_type) %></span>
+                    <span><%= getMeetingTypeLabel(meeting.meeting_type) %></span>
+                  </span>
+
+                  <span class="meeting-meta-item">
+                    <span>👥</span>
+                    <span><%= meeting.participant_count || 0 %> orang</span>
+                  </span>
+
+                  <span class="<%= getStatusPillClass(meeting.status) %>">
+                    <%= getStatusLabel(meeting.status) %>
+                  </span>
+                </div>
               </div>
+            </a>
 
+            <div class="meeting-actions">
+              <span class="<%= statusBadge.className %>">
+                <%= statusBadge.label %>
+              </span>
+
+              <a href="/meetings/<%= meeting.id %>#peserta" class="meeting-card-button">
+                <span>✅</span>
+                <span>Absensi</span>
+              </a>
+
+              <a href="/meetings/<%= meeting.id %>#notulen" class="meeting-card-button">
+                <span>📄</span>
+                <span>Notulen</span>
+              </a>
             </div>
           </div>
-
         <% }) %>
-
       <% } else { %>
-
-        <div class="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-12 text-center shadow-sm">
-          <p class="text-lg font-black text-zinc-700 dark:text-zinc-200">
-            Meeting Tidak Ditemukan
-          </p>
-
-          <p class="mt-1 text-sm text-zinc-400 dark:text-zinc-500">
-            Tidak ada meeting yang sesuai dengan akses akun, pencarian, atau filter yang dipilih.
-          </p>
+        <div class="meeting-empty-state">
+          <h2>Meeting Tidak Ditemukan</h2>
+          <p>Tidak ada meeting yang sesuai dengan akses akun, pencarian, atau filter yang dipilih.</p>
         </div>
-
       <% } %>
-
     </div>
 
     <% if (paginationData.totalPages > 1) { %>
-      <div class="mt-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <p class="text-sm text-zinc-500 dark:text-zinc-400">
+      <div class="meeting-pagination">
+        <p>
           Halaman <strong><%= paginationData.page %></strong> dari <strong><%= paginationData.totalPages %></strong>
         </p>
 
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="meeting-pagination-links">
           <% if (paginationData.page > 1) { %>
-            <a
-              href="<%= buildPageUrl(paginationData.page - 1) %>"
-              class="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-700 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-            >
+            <a href="<%= buildPageUrl(paginationData.page - 1) %>" class="meeting-page-link">
               Sebelumnya
             </a>
           <% } %>
@@ -326,17 +816,14 @@
           <% for (let pageNumber = 1; pageNumber <= paginationData.totalPages; pageNumber++) { %>
             <a
               href="<%= buildPageUrl(pageNumber) %>"
-              class="rounded-xl px-4 py-2 text-sm font-bold transition-colors <%= pageNumber === paginationData.page ? 'bg-emerald-700 text-white' : 'border border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800' %>"
+              class="meeting-page-link <%= pageNumber === paginationData.page ? 'active' : '' %>"
             >
               <%= pageNumber %>
             </a>
           <% } %>
 
           <% if (paginationData.page < paginationData.totalPages) { %>
-            <a
-              href="<%= buildPageUrl(paginationData.page + 1) %>"
-              class="rounded-xl border border-zinc-300 dark:border-zinc-700 px-4 py-2 text-sm font-bold text-zinc-700 dark:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
-            >
+            <a href="<%= buildPageUrl(paginationData.page + 1) %>" class="meeting-page-link">
               Berikutnya
             </a>
           <% } %>
