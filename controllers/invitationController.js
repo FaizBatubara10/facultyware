@@ -108,12 +108,12 @@ const detail = async (req, res, next) => {
 };
 
 // POST /invitations/:participantId/status
-// Update status undangan (confirmed / declined)
+// Update status undangan: terima -> otomatis 'attended', tolak -> otomatis 'absent'
 const updateStatus = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
     const participantId = req.params.participantId;
-    const { status } = req.body;
+    const { status } = req.body; // 'confirmed' atau 'declined' dari form
 
     const allowedStatus = ["confirmed", "declined"];
     if (!allowedStatus.includes(status)) {
@@ -136,12 +136,14 @@ const updateStatus = async (req, res, next) => {
       });
     }
 
+    // Terima undangan -> langsung tercatat hadir, tolak -> langsung tercatat tidak hadir
+    const finalStatus = status === "confirmed" ? "attended" : "absent";
+
     await db.query(
       `UPDATE meeting_participants SET status = ?, updated_at = NOW() WHERE id = ?`,
-      [status, participantId]
+      [finalStatus, participantId]
     );
 
-    // Redirect ke detail dengan pesan sukses via query string
     res.redirect(`/invitations/${participantId}?success=${status}`);
   } catch (err) {
     next(err);

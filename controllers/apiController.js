@@ -254,7 +254,374 @@ const showMeeting = async (req, res, next) => {
   }
 };
 
+// =========================================================================
+// UNDANGAN
+// =========================================================================
+
+const buildInvitationPayload = (row) => {
+  return {
+    participant_id: row.participant_id,
+    status: row.status,
+    invited_at: row.invited_at,
+    meeting: {
+      id: row.meeting_id,
+      title: row.title,
+      description: row.description || null,
+      meeting_date: formatDateValue(row.meeting_date),
+      start_time: formatTimeValue(row.start_time),
+      end_time: formatTimeValue(row.end_time),
+      meeting_type: row.meeting_type,
+      online_platform: row.online_platform || null,
+      online_link: row.online_link || null
+    }
+  };
+};
+
+const listInvitations = async (req, res, next) => {
+  try {
+    const currentEmployee = await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.status(403).json({ success: false, message: 'Akun tidak memiliki data pegawai.' });
+    }
+
+    const [rows] = await db.query(
+      `
+        SELECT 
+          mp.id AS participant_id,
+          mp.status,
+          mp.created_at AS invited_at,
+          m.id AS meeting_id,
+          m.title,
+          m.description,
+          m.meeting_date,
+          m.start_time,
+          m.end_time,
+          m.meeting_type,
+          m.online_platform,
+          m.online_link
+        FROM meeting_participants mp
+        JOIN meetings m ON mp.meeting_id = m.id
+        WHERE mp.employee_id = ?
+          AND mp.status = 'invited'
+        ORDER BY m.meeting_date ASC, m.start_time ASC
+      `,
+      [currentEmployee.id]
+    );
+
+    res.json({ success: true, data: rows.map(buildInvitationPayload) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const showInvitation = async (req, res, next) => {
+  const participantId = req.params.id;
+
+  try {
+    const currentEmployee = await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.status(403).json({ success: false, message: 'Akun tidak memiliki data pegawai.' });
+    }
+
+    const [rows] = await db.query(
+      `
+        SELECT 
+          mp.id AS participant_id,
+          mp.status,
+          mp.created_at AS invited_at,
+          m.id AS meeting_id,
+          m.title,
+          m.description,
+          m.meeting_date,
+          m.start_time,
+          m.end_time,
+          m.meeting_type,
+          m.online_platform,
+          m.online_link
+        FROM meeting_participants mp
+        JOIN meetings m ON mp.meeting_id = m.id
+        WHERE mp.id = ?
+          AND mp.employee_id = ?
+        LIMIT 1
+      `,
+      [participantId, currentEmployee.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Undangan tidak ditemukan.' });
+    }
+
+    const invitation = rows[0];
+
+    const [peserta] = await db.query(
+      `
+        SELECT e.name, e.employee_number, mp.status
+        FROM meeting_participants mp
+        JOIN employees e ON mp.employee_id = e.id
+        WHERE mp.meeting_id = ?
+        ORDER BY e.name ASC
+      `,
+      [invitation.meeting_id]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        ...buildInvitationPayload(invitation),
+        participants: peserta
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const updateInvitationStatus = async (req, res, next) => {
+  const participantId = req.params.id;
+  const { status } = req.body;
+
+  try {
+    const currentEmployee = await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.status(403).json({ success: false, message: 'Akun tidak memiliki data pegawai.' });
+    }
+
+    const allowedStatus = ['confirmed', 'declined'];
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({ success: false, message: 'Status tidak valid. Gunakan confirmed atau declined.' });
+    }
+
+    const [rows] = await db.query(
+      `SELECT id FROM meeting_participants WHERE id = ? AND employee_id = ? LIMIT 1`,
+      [participantId, currentEmployee.id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+    }
+
+    const finalStatus = status === 'confirmed' ? 'attended' : 'absent';
+
+    await db.query(
+      `UPDATE meeting_participants SET status = ?, updated_at = NOW() WHERE id = ?`,
+      [finalStatus, participantId]
+    );
+
+    res.json({
+      success: true,
+      message: status === 'confirmed' ? 'Undangan berhasil dikonfirmasi.' : 'Undangan berhasil ditolak.',
+      data: { participant_id: Number(participantId), status: finalStatus }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// =========================================================================
+// NOTULENSI
+// =========================================================================
+
+const buildMinutePayload = (row) => {
+  return {
+    id: row.id,
+    file: row.file,
+    summary: row.summary,
+    created_at: row.created_at,
+    meeting: {
+      id: row.meeting_id,
+      title: row.meeting_title,
+      meeting_date: formatDateValue(row.meeting_date),
+      status: row.meeting_status
+    }
+  };
+};
+
+const listMinutes = async (req, res, next) => {
+  try {
+    const currentEmployee = await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.status(403).json({ success: false, message: 'Akun tidak memiliki data pegawai.' });
+    }
+
+    const [rows] = await db.query(
+      `
+        SELECT 
+          mm.id,
+          mm.file,
+          mm.summary,
+          mm.created_at,
+          m.id AS meeting_id,
+          m.title AS meeting_title,
+          m.meeting_date,
+          m.status AS meeting_status
+        FROM meeting_minutes mm
+        JOIN meetings m ON mm.meeting_id = m.id
+        WHERE m.organizer_id = ?
+        ORDER BY mm.created_at DESC
+      `,
+      [currentEmployee.id]
+    );
+
+    res.json({ success: true, data: rows.map(buildMinutePayload) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const showMinute = async (req, res, next) => {
+  const minuteId = req.params.id;
+
+  try {
+    const currentEmployee = await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.status(403).json({ success: false, message: 'Akun tidak memiliki data pegawai.' });
+    }
+
+    const [rows] = await db.query(
+      `
+        SELECT 
+          mm.id,
+          mm.file,
+          mm.summary,
+          mm.created_at,
+          m.id AS meeting_id,
+          m.title AS meeting_title,
+          m.meeting_date,
+          m.status AS meeting_status,
+          m.organizer_id
+        FROM meeting_minutes mm
+        JOIN meetings m ON mm.meeting_id = m.id
+        WHERE mm.id = ?
+        LIMIT 1
+      `,
+      [minuteId]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Notulensi tidak ditemukan.' });
+    }
+
+    const minute = rows[0];
+
+    if (Number(minute.organizer_id) !== Number(currentEmployee.id)) {
+      return res.status(403).json({ success: false, message: 'Akses ditolak.' });
+    }
+
+    res.json({ success: true, data: buildMinutePayload(minute) });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// =========================================================================
+// DASHBOARD
+// =========================================================================
+
+const dashboardStats = async (req, res, next) => {
+  try {
+    const currentEmployee = await getCurrentEmployee(req.session.userId);
+
+    if (!currentEmployee) {
+      return res.status(403).json({ success: false, message: 'Akun tidak memiliki data pegawai.' });
+    }
+
+    const employeeId = currentEmployee.id;
+
+    const [hasilTotal] = await db.query(`
+      SELECT COUNT(*) AS total 
+      FROM meetings 
+      WHERE MONTH(meeting_date) = MONTH(CURRENT_DATE()) 
+        AND YEAR(meeting_date) = YEAR(CURRENT_DATE())
+    `);
+
+    const [meetingMendatang] = await db.query(
+      `SELECT DISTINCT m.id, m.title, m.meeting_date, m.start_time, m.end_time, m.meeting_type
+       FROM meetings m
+       LEFT JOIN meeting_participants mp ON mp.meeting_id = m.id AND mp.employee_id = ?
+       WHERE m.meeting_date >= CURRENT_DATE()
+         AND (m.organizer_id = ? OR mp.employee_id IS NOT NULL)
+       ORDER BY m.meeting_date ASC, m.start_time ASC
+       LIMIT 3`,
+      [employeeId, employeeId]
+    );
+
+    const [hasilPending] = await db.query(
+      `SELECT COUNT(*) AS total 
+       FROM meeting_participants 
+       WHERE employee_id = ? AND status = 'invited'`,
+      [employeeId]
+    );
+
+    const [hasilNotulenPending] = await db.query(
+      `SELECT COUNT(*) AS total 
+       FROM meetings 
+       WHERE status = 'completed' 
+         AND organizer_id = ?
+         AND id NOT IN (SELECT meeting_id FROM meeting_minutes)`,
+      [employeeId]
+    );
+
+    const [hasilTotalPeserta] = await db.query(
+      `SELECT COUNT(DISTINCT mp.employee_id) AS total
+       FROM meeting_participants mp
+       JOIN meetings m ON mp.meeting_id = m.id
+       WHERE m.organizer_id = ?`,
+      [employeeId]
+    );
+
+    const [hasilKehadiran] = await db.query(
+      `SELECT 
+         SUM(CASE WHEN status = 'attended' THEN 1 ELSE 0 END) AS hadir,
+         SUM(CASE WHEN status IN ('attended', 'absent') THEN 1 ELSE 0 END) AS total
+       FROM meeting_participants
+       WHERE employee_id = ?`,
+      [employeeId]
+    );
+
+    const jumlahHadir = hasilKehadiran[0].hadir || 0;
+    const jumlahTotalTercatat = hasilKehadiran[0].total || 0;
+    const persenKehadiran = jumlahTotalTercatat > 0
+      ? Math.round((jumlahHadir / jumlahTotalTercatat) * 100)
+      : 0;
+
+    res.json({
+      success: true,
+      data: {
+        total_meeting_bulan_ini: hasilTotal[0].total,
+        meeting_mendatang: meetingMendatang.map((m) => ({
+          id: m.id,
+          title: m.title,
+          meeting_date: formatDateValue(m.meeting_date),
+          start_time: formatTimeValue(m.start_time),
+          end_time: formatTimeValue(m.end_time),
+          meeting_type: m.meeting_type
+        })),
+        total_undangan_pending: hasilPending[0].total,
+        total_notulen_pending: hasilNotulenPending[0].total,
+        total_peserta: hasilTotalPeserta[0].total,
+        kehadiran: {
+          hadir: jumlahHadir,
+          total_tercatat: jumlahTotalTercatat,
+          persen: persenKehadiran
+        }
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
 module.exports = {
   listMeetings,
-  showMeeting
+  showMeeting,
+  listInvitations,
+  showInvitation,
+  updateInvitationStatus,
+  listMinutes,
+  showMinute,
+  dashboardStats
 };

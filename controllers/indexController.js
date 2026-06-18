@@ -7,6 +7,8 @@ const index = (req, res) => {
 
 const home = async (req, res, next) => {
   try {
+    const employeeId = req.session.employeeId;
+
     // 1. Total meeting bulan ini
     const [hasilTotal] = await db.query(`
       SELECT COUNT(*) AS total 
@@ -16,18 +18,19 @@ const home = async (req, res, next) => {
     `);
     const totalMeetingBulanIni = hasilTotal[0].total;
 
-    // 2. Meeting mendatang (maks 3)
-    const [meetingMendatang] = await db.query(`
-      SELECT title, meeting_date, start_time, end_time, meeting_type 
-      FROM meetings 
-      WHERE meeting_date >= CURRENT_DATE() 
-      ORDER BY meeting_date ASC, start_time ASC 
-      LIMIT 3
-    `);
+    // 2. Meeting mendatang — hanya yang dia host atau dia diundang (maks 3)
+    const [meetingMendatang] = await db.query(
+      `SELECT DISTINCT m.title, m.meeting_date, m.start_time, m.end_time, m.meeting_type
+       FROM meetings m
+       LEFT JOIN meeting_participants mp ON mp.meeting_id = m.id AND mp.employee_id = ?
+       WHERE m.meeting_date >= CURRENT_DATE()
+         AND (m.organizer_id = ? OR mp.employee_id IS NOT NULL)
+       ORDER BY m.meeting_date ASC, m.start_time ASC
+       LIMIT 3`,
+      [employeeId, employeeId]
+    );
 
     // 3. Undangan pending milik user yang login
-    const employeeId = req.session.employeeId;
-
     const [undanganTerbaru] = await db.query(
       `SELECT mp.id AS participant_id, m.title, m.meeting_date
        FROM meeting_participants mp
@@ -45,13 +48,15 @@ const home = async (req, res, next) => {
     );
     const totalUndanganPending = hasilPending[0].total;
 
-    // 4. Notulen pending (meeting completed tapi belum ada notulensi)
-    const [hasilNotulenPending] = await db.query(`
-      SELECT COUNT(*) AS total 
-      FROM meetings 
-      WHERE status = 'completed' 
-        AND id NOT IN (SELECT meeting_id FROM meeting_minutes)
-    `);
+    // 4. Notulen pending — hanya meeting yang dia buat (organizer) & sudah completed
+    const [hasilNotulenPending] = await db.query(
+      `SELECT COUNT(*) AS total 
+       FROM meetings 
+       WHERE status = 'completed' 
+         AND organizer_id = ?
+         AND id NOT IN (SELECT meeting_id FROM meeting_minutes)`,
+      [employeeId]
+    );
     const totalNotulenPending = hasilNotulenPending[0].total;
 
     // 5. Notulen terbaru (maks 3)
@@ -66,6 +71,31 @@ const home = async (req, res, next) => {
       LIMIT 3
     `);
 
+    // 6. Total peserta — hanya peserta di meeting yang dia buat (organizer)
+    const [hasilTotalPeserta] = await db.query(
+      `SELECT COUNT(DISTINCT mp.employee_id) AS total
+       FROM meeting_participants mp
+       JOIN meetings m ON mp.meeting_id = m.id
+       WHERE m.organizer_id = ?`,
+      [employeeId]
+    );
+    const totalPeserta = hasilTotalPeserta[0].total;
+
+    // 7. Ringkasan kehadiran (persentase hadir user yang login)
+    const [hasilKehadiran] = await db.query(
+      `SELECT 
+         SUM(CASE WHEN status = 'attended' THEN 1 ELSE 0 END) AS hadir,
+         SUM(CASE WHEN status IN ('attended', 'absent') THEN 1 ELSE 0 END) AS total
+       FROM meeting_participants
+       WHERE employee_id = ?`,
+      [employeeId]
+    );
+    const jumlahHadir = hasilKehadiran[0].hadir || 0;
+    const jumlahTotalTercatat = hasilKehadiran[0].total || 0;
+    const persenKehadiran = jumlahTotalTercatat > 0 
+      ? Math.round((jumlahHadir / jumlahTotalTercatat) * 100) 
+      : 0;
+
     res.render("home", { 
       title: "Home", 
       user: req.session.username,
@@ -75,6 +105,10 @@ const home = async (req, res, next) => {
       totalUndanganPending,
       totalNotulenPending,
       notulenTerbaru,
+      totalPeserta,
+      jumlahHadir,
+      jumlahTotalTercatat,
+      persenKehadiran,
     });
   } catch (err) {
     next(err);

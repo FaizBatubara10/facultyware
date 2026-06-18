@@ -991,20 +991,31 @@ const destroy = async (req, res, next) => {
 
 const renderUploadMinutesForm = async (req, res, next) => {
   try {
+    const employeeId = req.session.employeeId;
     const selectedMeetingId = req.query.meeting_id || null;
 
-    const [meetingsData] = await db.query(`
-      SELECT 
+    /*
+      Dropdown upload:
+      hanya menampilkan meeting yang dia buat (organizer), 
+      statusnya completed, dan belum punya notulensi.
+    */
+    const [meetingsData] = await db.query(
+      `SELECT 
         id,
         title,
         meeting_date AS date
       FROM meetings
-      WHERE id NOT IN (
-        SELECT meeting_id
-        FROM meeting_minutes
-      )
-      ORDER BY meeting_date DESC
-    `);
+      WHERE organizer_id = ?
+        AND status = 'completed'
+        AND id NOT IN (
+          SELECT meeting_id
+          FROM meeting_minutes
+        )
+      ORDER BY meeting_date DESC`,
+      [employeeId]
+    );
+
+    // ... sisanya (meetingsWithMinutes, minutesQuery, dst) tetap sama
 
     const [meetingsWithMinutes] = await db.query(`
       SELECT DISTINCT

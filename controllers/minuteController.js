@@ -21,24 +21,29 @@ const formatTimeValue = (timeValue) => {
 
 const renderUploadMinutesForm = async (req, res, next) => {
   try {
+    const employeeId = req.session.employeeId;
     const selectedMeetingId = req.query.meeting_id || null;
 
     /*
       Dropdown upload:
-      hanya menampilkan meeting yang belum punya notulensi.
+      hanya menampilkan meeting yang dia buat (organizer),
+      statusnya completed, dan belum punya notulensi.
     */
-    const [meetingsData] = await db.query(`
-      SELECT 
+    const [meetingsData] = await db.query(
+      `SELECT 
         id,
         title,
         meeting_date AS date
       FROM meetings
-      WHERE id NOT IN (
-        SELECT meeting_id
-        FROM meeting_minutes
-      )
-      ORDER BY meeting_date DESC
-    `);
+      WHERE organizer_id = ?
+        AND status = 'completed'
+        AND id NOT IN (
+          SELECT meeting_id
+          FROM meeting_minutes
+        )
+      ORDER BY meeting_date DESC`,
+      [employeeId]
+    );
 
     /*
       Dropdown filter:
@@ -93,6 +98,7 @@ const renderUploadMinutesForm = async (req, res, next) => {
 
 const processUploadMinutes = async (req, res, next) => {
   try {
+    const employeeId = req.session.employeeId;
     const meetingId = req.body.meeting_id;
     const summaryText = req.body.notes || '';
     const uploadedFile = req.file;
@@ -106,27 +112,26 @@ const processUploadMinutes = async (req, res, next) => {
     }
 
     /*
-      Ambil organizer_id dari meeting.
-      Di project ini organizer_id dipakai sebagai created_by dan employee_id
-      untuk data notulensi.
+      Validasi ulang di server:
+      meeting harus benar-benar milik organizer yang login,
+      statusnya completed, dan belum punya notulensi.
+      Ini mencegah orang kirim meeting_id orang lain langsung lewat POST.
     */
     const [meetingRows] = await db.query(
-      `SELECT organizer_id
+      `SELECT organizer_id, status
        FROM meetings
-       WHERE id = ?`,
-      [meetingId]
+       WHERE id = ?
+         AND organizer_id = ?
+         AND status = 'completed'
+         AND id NOT IN (SELECT meeting_id FROM meeting_minutes)`,
+      [meetingId, employeeId]
     );
 
     if (meetingRows.length === 0) {
-      return res.status(404).send('Meeting tidak ditemukan.');
+      return res.status(403).send('Anda tidak berhak mengunggah notulensi untuk meeting ini.');
     }
 
-    const employeeId = meetingRows[0].organizer_id;
-    const createdBy = meetingRows[0].organizer_id;
-
-    if (!employeeId) {
-      return res.status(400).send('Data pengunggah tidak ditemukan.');
-    }
+    const createdBy = employeeId;
 
     const filePath = '/assets/uploads/' + uploadedFile.filename;
 
