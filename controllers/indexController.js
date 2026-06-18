@@ -48,14 +48,9 @@ const home = async (req, res, next) => {
     );
     const totalUndanganPending = hasilPending[0].total;
 
-    // 4. Notulen pending — hanya meeting yang dia buat (organizer) & sudah completed
+    // 4. Jumlah file notulensi yang sudah diupload
     const [hasilNotulenPending] = await db.query(
-      `SELECT COUNT(*) AS total 
-       FROM meetings 
-       WHERE status = 'completed' 
-         AND organizer_id = ?
-         AND id NOT IN (SELECT meeting_id FROM meeting_minutes)`,
-      [employeeId]
+      `SELECT COUNT(*) AS total FROM meeting_minutes`
     );
     const totalNotulenPending = hasilNotulenPending[0].total;
 
@@ -71,7 +66,7 @@ const home = async (req, res, next) => {
       LIMIT 3
     `);
 
-    // 6. Total peserta — hanya peserta di meeting yang dia buat (organizer)
+    // 6. Total peserta unik di meeting yang dia buat
     const [hasilTotalPeserta] = await db.query(
       `SELECT COUNT(DISTINCT mp.employee_id) AS total
        FROM meeting_participants mp
@@ -81,20 +76,19 @@ const home = async (req, res, next) => {
     );
     const totalPeserta = hasilTotalPeserta[0].total;
 
-    // 7. Ringkasan kehadiran (persentase hadir user yang login)
-    const [hasilKehadiran] = await db.query(
-      `SELECT 
-         SUM(CASE WHEN status = 'attended' THEN 1 ELSE 0 END) AS hadir,
-         SUM(CASE WHEN status IN ('attended', 'absent') THEN 1 ELSE 0 END) AS total
-       FROM meeting_participants
-       WHERE employee_id = ?`,
-      [employeeId]
-    );
-    const jumlahHadir = hasilKehadiran[0].hadir || 0;
-    const jumlahTotalTercatat = hasilKehadiran[0].total || 0;
-    const persenKehadiran = jumlahTotalTercatat > 0 
-      ? Math.round((jumlahHadir / jumlahTotalTercatat) * 100) 
-      : 0;
+    // 7. Grafik jumlah rapat per bulan (tahun ini, seluruh meeting)
+    const [hasilRapatBulanan] = await db.query(`
+      SELECT MONTH(meeting_date) AS bulan, COUNT(*) AS total
+      FROM meetings
+      WHERE YEAR(meeting_date) = YEAR(CURRENT_DATE())
+      GROUP BY MONTH(meeting_date)
+    `);
+
+    const labelBulanRapat = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    const dataRapatBulanan = labelBulanRapat.map((_, idx) => {
+      const ditemukan = hasilRapatBulanan.find((r) => r.bulan === idx + 1);
+      return ditemukan ? ditemukan.total : 0;
+    });
 
     res.render("home", { 
       title: "Home", 
@@ -106,9 +100,8 @@ const home = async (req, res, next) => {
       totalNotulenPending,
       notulenTerbaru,
       totalPeserta,
-      jumlahHadir,
-      jumlahTotalTercatat,
-      persenKehadiran,
+      labelBulanRapat,
+      dataRapatBulanan,
     });
   } catch (err) {
     next(err);
