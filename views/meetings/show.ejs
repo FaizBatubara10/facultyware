@@ -909,15 +909,33 @@
 
         <% if (typeof isHost !== 'undefined' && isHost) { %>
           <div class="detail-actions">
-            <button
-              type="button"
-              class="detail-button disabled"
-              title="Fitur export daftar hadir akan dikerjakan oleh anggota tim yang bertugas"
-              onclick="alert('Fitur Export Daftar Hadir belum diaktifkan karena bagian ini dikerjakan oleh anggota tim yang bertugas.');"
-            >
-              <span>📤</span>
-              <span>Export Daftar Hadir</span>
-            </button>
+            <% if (typeof canExportAttendance !== 'undefined' && canExportAttendance) { %>
+              <a
+                href="/meetings/<%= meeting.id %>/export-attendance"
+                class="detail-button"
+                title="Export daftar hadir peserta meeting dalam format Excel"
+              >
+                <span>📤</span>
+                <span>Export Daftar Hadir</span>
+              </a>
+            <% } else { %>
+              <%
+                const exportAttendanceDisabledMessage =
+                  typeof exportAttendanceMessage !== 'undefined' && exportAttendanceMessage
+                    ? exportAttendanceMessage
+                    : 'Export belum tersedia.';
+              %>
+              <button
+                type="button"
+                class="detail-button disabled"
+                title="<%= exportAttendanceDisabledMessage %>"
+                data-export-message="<%= exportAttendanceDisabledMessage %>"
+                onclick="alert(this.dataset.exportMessage)"
+              >
+                <span>📤</span>
+                <span>Export Daftar Hadir</span>
+              </button>
+            <% } %>
 
             <% if (canShowEditAttendance) { %>
               <button

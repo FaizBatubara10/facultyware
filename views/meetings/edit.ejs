@@ -214,6 +214,15 @@
     color: #222222;
   }
 
+
+  .form-helper-text {
+    margin: 8px 0 0;
+    color: #746d62;
+    font-size: 12px;
+    line-height: 1.45;
+    font-weight: 600;
+  }
+
   .form-control {
     width: 100%;
     padding: 12px 14px;
@@ -681,22 +690,22 @@
               class="form-control"
               required
             >
-              <option value="draft" <%= meeting.status === 'draft' ? 'selected' : '' %>>
-                Draft
-              </option>
-
-              <option value="scheduled" <%= meeting.status === 'scheduled' ? 'selected' : '' %>>
-                Scheduled
-              </option>
-
-              <option value="completed" <%= meeting.status === 'completed' ? 'selected' : '' %>>
-                Completed
-              </option>
-
-              <option value="cancelled" <%= meeting.status === 'cancelled' ? 'selected' : '' %>>
-                Cancelled
-              </option>
+              <% if (meeting.status === 'draft') { %>
+                <option value="draft" selected>Draft</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="cancelled">Cancelled</option>
+              <% } else if (meeting.status === 'scheduled') { %>
+                <option value="scheduled" selected>Scheduled</option>
+                <option value="cancelled">Cancelled</option>
+              <% } else { %>
+                <option value="<%= meeting.status %>" selected><%= meeting.status %></option>
+              <% } %>
             </select>
+
+            <p class="form-helper-text">
+              Status Completed diatur otomatis saat waktu mulai meeting sudah tercapai.
+              Meeting yang sudah Scheduled hanya bisa tetap Scheduled atau dibatalkan.
+            </p>
           </div>
 
           <div class="form-group">

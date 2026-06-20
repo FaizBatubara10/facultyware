@@ -2,6 +2,7 @@ const db = require('../lib/db');
 const fs = require('fs');
 const path = require('path');
 const PDFDocument = require('pdfkit');
+const ExcelJS = require('exceljs');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const { getCurrentEmployee } = require('../middlewares/meetingAccess');
@@ -23,6 +24,59 @@ const formatTimeValue = (timeValue) => {
   }
 
   return String(timeValue).substring(0, 5);
+};
+
+
+const formatDateValue = (dateValue) => {
+  if (!dateValue) {
+    return '-';
+  }
+
+  const date = new Date(dateValue);
+
+  if (isNaN(date.getTime())) {
+    return '-';
+  }
+
+  return date.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  });
+};
+
+const safeFileName = (value) => {
+  return String(value || 'meeting')
+    .trim()
+    .replace(/[^a-z0-9]/gi, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '') || 'meeting';
+};
+
+const isFinalAttendanceStatus = (status) => {
+  return ['attended', 'absent'].includes(status);
+};
+
+const getAttendanceStatusLabel = (status) => {
+  const labels = {
+    invited: 'Diundang',
+    confirmed: 'Konfirmasi Hadir',
+    declined: 'Berhalangan',
+    attended: 'Hadir',
+    absent: 'Tidak Hadir'
+  };
+
+  return labels[status] || status || '-';
+};
+
+const isAttendanceExportReady = (internalParticipants, externalParticipants) => {
+  const participantStatuses = [
+    ...internalParticipants.map((participant) => participant.status),
+    ...externalParticipants.map((participant) => participant.status)
+  ];
+
+  return participantStatuses.length > 0
+    && participantStatuses.every((status) => isFinalAttendanceStatus(status));
 };
 
 const parseParticipantIds = (participantIds) => {
@@ -268,8 +322,10 @@ const index = async (req, res, next) => {
 
     const searchKeyword = String(req.query.q || '').trim();
     const selectedStatus = String(req.query.status || 'all');
-    const selectedMonth = String(req.query.month || 'all');
+    const selectedSort = String(req.query.sort || 'latest');
     const allowedStatuses = ['draft', 'scheduled', 'completed', 'cancelled'];
+    const allowedSorts = ['latest', 'oldest'];
+    const sortMode = allowedSorts.includes(selectedSort) ? selectedSort : 'latest';
 
     let meetings = [];
     let totalFilteredMeetings = 0;
@@ -298,14 +354,10 @@ const index = async (req, res, next) => {
         params.push(selectedStatus);
       }
 
-      const monthRange = getMonthRange(selectedMonth);
-
-      if (monthRange) {
-        whereParts.push(`m.meeting_date >= ? AND m.meeting_date < ?`);
-        params.push(monthRange.start, monthRange.end);
-      }
-
       const whereSql = whereParts.join(' AND ');
+      const orderSql = sortMode === 'oldest'
+        ? 'm.meeting_date ASC, m.start_time ASC, m.id ASC'
+        : 'm.meeting_date DESC, m.start_time DESC, m.id DESC';
 
       const [countRows] = await db.query(
         `
@@ -353,7 +405,7 @@ const index = async (req, res, next) => {
             m.end_time,
             m.status,
             m.organizer_id
-          ORDER BY m.meeting_date ASC, m.start_time ASC
+          ORDER BY ${orderSql}
           LIMIT ? OFFSET ?
         `,
         [...params, pagination.limit, pagination.offset]
@@ -392,7 +444,7 @@ const index = async (req, res, next) => {
       filters: {
         q: searchKeyword,
         status: selectedStatus,
-        month: selectedMonth
+        sort: sortMode
       },
       pagination,
       stats: {
@@ -638,9 +690,19 @@ const show = async (req, res, next) => {
       && Number(meeting.has_started) === 1
       && meeting.status === 'completed';
 
+    const canExportAttendance = isHost
+      && meeting.status === 'completed'
+      && isAttendanceExportReady(participants, externalParticipants);
+
+    const exportAttendanceMessage = canExportAttendance
+      ? null
+      : 'Export daftar hadir baru aktif setelah meeting completed dan seluruh peserta disimpan sebagai Hadir atau Tidak Hadir.';
+
     const accessMessageMap = {
       meeting_locked: 'Meeting yang sudah completed atau cancelled tidak dapat diedit lagi.',
-      attendance_unavailable: 'Kehadiran baru dapat diubah setelah meeting berstatus completed.'
+      attendance_unavailable: 'Kehadiran baru dapat diubah setelah meeting berstatus completed.',
+      attendance_not_ready: 'Daftar hadir belum bisa diexport karena masih ada peserta yang belum diberi status Hadir atau Tidak Hadir.',
+      export_unavailable: 'Export daftar hadir hanya bisa dilakukan setelah meeting completed.'
     };
 
     const accessMessage = accessMessageMap[req.query.access_error] || null;
@@ -653,6 +715,8 @@ const show = async (req, res, next) => {
       minutes,
       isHost,
       canEditAttendance,
+      canExportAttendance,
+      exportAttendanceMessage,
       accessMessage
     });
   } catch (err) {
@@ -798,6 +862,15 @@ const update = async (req, res, next) => {
 
     if (isMeetingLocked(meetingRows[0])) {
       return res.redirect(`/meetings/${meetingId}?access_error=meeting_locked`);
+    }
+
+    const currentStatus = meetingRows[0].status;
+    const allowedNextStatuses = currentStatus === 'draft'
+      ? ['draft', 'scheduled', 'cancelled']
+      : ['scheduled', 'cancelled'];
+
+    if (!allowedNextStatuses.includes(status)) {
+      return res.status(400).send('Status meeting tidak valid. Meeting scheduled hanya dapat tetap scheduled atau diubah menjadi cancelled. Status completed diatur otomatis berdasarkan waktu mulai meeting.');
     }
 
     /*
@@ -1443,10 +1516,10 @@ const exportMinutePdf = async (req, res, next) => {
 
 
 // =========================================================================
-// EXPORT ATTENDANCE PDF — Generate PDF daftar hadir peserta meeting
+// EXPORT ATTENDANCE EXCEL — Generate Excel daftar hadir peserta meeting
 // =========================================================================
 
-const exportAttendancePdf = async (req, res, next) => {
+const exportAttendanceExcel = async (req, res, next) => {
   const meetingId = req.params.id;
 
   try {
@@ -1478,6 +1551,10 @@ const exportAttendancePdf = async (req, res, next) => {
 
     const meeting = meetingRows[0];
 
+    if (meeting.status !== 'completed') {
+      return res.redirect(`/meetings/${meetingId}?access_error=export_unavailable`);
+    }
+
     const [internalParticipants] = await db.query(
       `SELECT
           e.name,
@@ -1493,143 +1570,148 @@ const exportAttendancePdf = async (req, res, next) => {
 
     const externalParticipants = await getExternalParticipantsByMeetingId(meetingId);
 
-    const statusLabelMap = {
-      invited: 'Diundang',
-      confirmed: 'Konfirmasi Hadir',
-      declined: 'Berhalangan',
-      attended: 'Hadir',
-      absent: 'Tidak Hadir'
-    };
+    if (!isAttendanceExportReady(internalParticipants, externalParticipants)) {
+      return res.redirect(`/meetings/${meetingId}?access_error=attendance_not_ready#attendance-section`);
+    }
 
-    const doc = new PDFDocument({
-      margin: 56,
-      size: 'A4'
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'FTI Meeting System';
+    workbook.created = new Date();
+
+    const worksheet = workbook.addWorksheet('Daftar Hadir', {
+      pageSetup: {
+        paperSize: 9,
+        orientation: 'landscape',
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0
+      }
     });
 
-    const safeName = String(meeting.title || 'meeting').replace(/[^a-z0-9]/gi, '_');
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="daftar_hadir_${safeName}.pdf"`);
-
-    doc.pipe(res);
-
-    const green = '#065f46';
-    const dark = '#111827';
-    const gray = '#6b7280';
-    const line = '#e5e7eb';
-    const contentWidth = 595 - 56 * 2;
-
-    doc.rect(0, 0, 595, 6).fill(green);
-    doc.moveDown(0.5);
-
-    doc
-      .fontSize(21)
-      .font('Helvetica-Bold')
-      .fillColor(dark)
-      .text('DAFTAR HADIR PESERTA MEETING', { align: 'center' });
-
-    doc
-      .fontSize(10)
-      .font('Helvetica')
-      .fillColor(gray)
-      .text('FTI Meeting System', { align: 'center' });
-
-    doc.moveDown(0.8);
-    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(1.3).strokeColor(green).stroke();
-    doc.moveDown(0.8);
-
-    const meetingDate = new Date(meeting.meeting_date).toLocaleDateString('id-ID', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
-    const infoRows = [
-      ['Judul Meeting', meeting.title],
-      ['Tanggal', meetingDate],
-      ['Waktu', `${formatTimeValue(meeting.start_time)} - ${formatTimeValue(meeting.end_time)}`],
-      ['Tipe', meeting.meeting_type],
-      ['Status', meeting.status],
-      ['Host', `${meeting.organizer_name}${meeting.organizer_number ? ' (' + meeting.organizer_number + ')' : ''}`]
+    worksheet.columns = [
+      { header: 'No', key: 'no', width: 6 },
+      { header: 'Nama Peserta', key: 'name', width: 32 },
+      { header: 'Tipe Peserta', key: 'type', width: 16 },
+      { header: 'Nomor Pegawai / Email', key: 'identity', width: 28 },
+      { header: 'Instansi', key: 'institution', width: 26 },
+      { header: 'Status Kehadiran', key: 'status', width: 20 }
     ];
 
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('INFORMASI MEETING');
-    doc.moveDown(0.3);
+    worksheet.mergeCells('A1:F1');
+    worksheet.getCell('A1').value = 'DAFTAR HADIR PESERTA MEETING';
+    worksheet.getCell('A1').font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+    worksheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getCell('A1').fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF2F765D' }
+    };
+    worksheet.getRow(1).height = 28;
 
-    const boxY = doc.y;
-    const rowHeight = 19;
-    const boxHeight = infoRows.length * rowHeight + 14;
+    const infoRows = [
+      ['Judul Meeting', meeting.title || '-'],
+      ['Tanggal', formatDateValue(meeting.meeting_date)],
+      ['Waktu', `${formatTimeValue(meeting.start_time)} - ${formatTimeValue(meeting.end_time)}`],
+      ['Tipe Meeting', meeting.meeting_type || '-'],
+      ['Status Meeting', getAttendanceStatusLabel(meeting.status) === meeting.status ? meeting.status : 'Completed'],
+      ['Penyelenggara', `${meeting.organizer_name || '-'}${meeting.organizer_number ? ' (' + meeting.organizer_number + ')' : ''}`]
+    ];
 
-    doc.rect(56, boxY, contentWidth, boxHeight).fillAndStroke('#f9fafb', line);
-
-    let rowY = boxY + 9;
-    doc.font('Helvetica').fontSize(10);
-
+    let currentRow = 3;
     for (const [label, value] of infoRows) {
-      doc.fillColor(gray).text(label, 68, rowY, { width: 110, lineBreak: false });
-      doc.fillColor(dark).text(`: ${value || '-'}`, 188, rowY, { width: contentWidth - 135, lineBreak: false });
-      rowY += rowHeight;
+      worksheet.getCell(`A${currentRow}`).value = label;
+      worksheet.getCell(`B${currentRow}`).value = value;
+      worksheet.getCell(`A${currentRow}`).font = { bold: true };
+      worksheet.mergeCells(`B${currentRow}:F${currentRow}`);
+      currentRow += 1;
     }
 
-    doc.y = boxY + boxHeight + 18;
+    currentRow += 1;
 
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('HOST MEETING');
-    doc.moveDown(0.3);
-    doc.font('Helvetica').fontSize(10).fillColor(dark)
-      .text(`1. ${meeting.organizer_name}${meeting.organizer_number ? ' (' + meeting.organizer_number + ')' : ''} - Host`);
+    const headerRow = worksheet.getRow(currentRow);
+    headerRow.values = ['No', 'Nama Peserta', 'Tipe Peserta', 'Nomor Pegawai / Email', 'Instansi', 'Status Kehadiran'];
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF2F765D' }
+    };
+    currentRow += 1;
 
-    doc.moveDown(0.8);
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('PESERTA INTERNAL');
-    doc.moveDown(0.3);
-    doc.font('Helvetica').fontSize(10).fillColor(dark);
+    const attendanceRows = [];
 
-    if (internalParticipants.length > 0) {
-      internalParticipants.forEach((participant, index) => {
-        const statusText = statusLabelMap[participant.status] || participant.status || '-';
-        const numberText = participant.employee_number ? ` (${participant.employee_number})` : '';
-        doc.text(`${index + 1}. ${participant.name}${numberText} - ${statusText}`, { lineGap: 3 });
+    internalParticipants.forEach((participant) => {
+      attendanceRows.push({
+        name: participant.name || '-',
+        type: 'Internal',
+        identity: participant.employee_number || '-',
+        institution: 'FTI',
+        status: getAttendanceStatusLabel(participant.status)
       });
-    } else {
-      doc.fillColor(gray).text('Tidak ada peserta internal tambahan.');
-    }
-
-    doc.moveDown(0.8);
-    doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('PESERTA EKSTERNAL');
-    doc.moveDown(0.3);
-    doc.font('Helvetica').fontSize(10).fillColor(dark);
-
-    if (externalParticipants.length > 0) {
-      externalParticipants.forEach((participant, index) => {
-        const statusText = statusLabelMap[participant.status] || participant.status || '-';
-        const institutionText = participant.institution ? ` - ${participant.institution}` : '';
-        const emailText = participant.email ? ` (${participant.email})` : '';
-        doc.text(`${index + 1}. ${participant.name}${institutionText}${emailText} - ${statusText}`, { lineGap: 3 });
-      });
-    } else {
-      doc.fillColor(gray).text('Tidak ada peserta eksternal.');
-    }
-
-    doc.moveDown(1.2);
-    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.8).strokeColor(line).stroke();
-    doc.moveDown(0.5);
-
-    const exportedAt = new Date().toLocaleString('id-ID', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
     });
 
-    doc
-      .fontSize(8)
-      .fillColor(gray)
-      .text(`Dicetak pada: ${exportedAt}`, 56, doc.y, { align: 'left', continued: true })
-      .text('FTI Meeting System', { align: 'right' });
+    externalParticipants.forEach((participant) => {
+      attendanceRows.push({
+        name: participant.name || '-',
+        type: 'Eksternal',
+        identity: participant.email || '-',
+        institution: participant.institution || '-',
+        status: getAttendanceStatusLabel(participant.status)
+      });
+    });
 
-    doc.rect(0, 830, 595, 6).fill(green);
-    doc.end();
+    attendanceRows.forEach((participant, index) => {
+      worksheet.addRow({
+        no: index + 1,
+        name: participant.name,
+        type: participant.type,
+        identity: participant.identity,
+        institution: participant.institution,
+        status: participant.status
+      });
+    });
+
+    worksheet.eachRow((row, rowNumber) => {
+      row.eachCell((cell) => {
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFD9D2C6' } },
+          left: { style: 'thin', color: { argb: 'FFD9D2C6' } },
+          bottom: { style: 'thin', color: { argb: 'FFD9D2C6' } },
+          right: { style: 'thin', color: { argb: 'FFD9D2C6' } }
+        };
+        cell.alignment = {
+          vertical: 'middle',
+          wrapText: true
+        };
+      });
+
+      if (rowNumber > currentRow - 1 && rowNumber % 2 === 0) {
+        row.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFFCF7' }
+          };
+        });
+      }
+    });
+
+    worksheet.getColumn('A').alignment = { horizontal: 'center', vertical: 'middle' };
+    worksheet.getColumn('F').alignment = { horizontal: 'center', vertical: 'middle' };
+
+    const exportedAtRow = worksheet.lastRow.number + 2;
+    worksheet.mergeCells(`A${exportedAtRow}:F${exportedAtRow}`);
+    worksheet.getCell(`A${exportedAtRow}`).value = `Diexport pada: ${new Date().toLocaleString('id-ID')}`;
+    worksheet.getCell(`A${exportedAtRow}`).font = { italic: true, color: { argb: 'FF6B7280' } };
+
+    const fileName = `daftar_hadir_${safeFileName(meeting.title)}.xlsx`;
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (err) {
     next(err);
   }
@@ -1648,7 +1730,7 @@ module.exports = {
   update,
   updateAttendance,
   destroy,
-  exportAttendancePdf,
+  exportAttendanceExcel,
   renderUploadMinutesForm,
   processUploadMinutes,
   deleteMinute,
