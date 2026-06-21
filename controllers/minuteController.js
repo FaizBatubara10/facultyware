@@ -65,6 +65,7 @@ const renderUploadMinutesForm = async (req, res, next) => {
         m.title AS meeting_title,
         mm.file AS file_path,
         mm.summary,
+        m.organizer_id,
         DATE_FORMAT(mm.created_at, '%d-%m-%Y %H:%i') AS uploaded_at
       FROM meeting_minutes mm
       JOIN meetings m ON mm.meeting_id = m.id
@@ -85,7 +86,9 @@ const renderUploadMinutesForm = async (req, res, next) => {
       meetings: meetingsData,
       meetingsWithMinutes,
       minutesList: historyData,
-      selectedMeetingId
+      selectedMeetingId,
+      currentUserId: employeeId,
+      messages: req.flash()   // ← tambahkan ini
     });
   } catch (err) {
     next(err);
@@ -168,17 +171,23 @@ const processUploadMinutes = async (req, res, next) => {
 
 const deleteMinute = async (req, res, next) => {
   const minuteId = req.params.id;
+  const employeeId = req.session.employeeId;
 
   try {
     const [rows] = await db.query(
-      `SELECT file
-       FROM meeting_minutes
-       WHERE id = ?`,
+      `SELECT mm.file, m.organizer_id
+       FROM meeting_minutes mm
+       JOIN meetings m ON mm.meeting_id = m.id
+       WHERE mm.id = ?`,
       [minuteId]
     );
 
     if (rows.length === 0) {
       return res.status(404).send('Notulensi tidak ditemukan.');
+    }
+
+    if (rows[0].organizer_id !== employeeId) {
+      return res.status(403).send('Anda tidak berhak menghapus notulensi ini.');
     }
 
     const filePath = rows[0].file;
@@ -212,6 +221,7 @@ const deleteMinute = async (req, res, next) => {
 
 const replaceMinute = async (req, res, next) => {
   const minuteId = req.params.id;
+  const employeeId = req.session.employeeId;
 
   try {
     if (!req.file) {
@@ -219,14 +229,19 @@ const replaceMinute = async (req, res, next) => {
     }
 
     const [rows] = await db.query(
-      `SELECT file
-       FROM meeting_minutes
-       WHERE id = ?`,
+      `SELECT mm.file, m.organizer_id
+       FROM meeting_minutes mm
+       JOIN meetings m ON mm.meeting_id = m.id
+       WHERE mm.id = ?`,
       [minuteId]
     );
 
     if (rows.length === 0) {
       return res.status(404).send('Notulensi tidak ditemukan.');
+    }
+
+    if (rows[0].organizer_id !== employeeId) {
+      return res.status(403).send('Anda tidak berhak mengganti notulensi ini.');
     }
 
     const oldFilePath = rows[0].file;

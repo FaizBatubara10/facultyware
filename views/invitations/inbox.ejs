@@ -1,16 +1,101 @@
 <%- include('../partials/header') %>
 
-<div class="p-4 md:p-6 xl:p-8 min-h-screen">
-  <div class="max-w-screen-2xl mx-auto">
+<style>
+  /* Token warna konsisten dengan dashboard (adaptif light/dark) */
+  :root{
+    --fwd-emerald:#059669;  --fwd-emerald-soft:#ecfdf5;  --fwd-emerald-bd:#a7f3d0;
+    --fwd-amber:#b45309;    --fwd-amber-soft:#fffbeb;    --fwd-amber-bd:#fde68a;
+    --fwd-shadow:0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --fwd-shadow-hover:0 12px 24px -8px rgba(0,0,0,.12);
+  }
+  .dark{
+    --fwd-emerald:#34d399;  --fwd-emerald-soft:rgba(16,185,129,.12);  --fwd-emerald-bd:rgba(52,211,153,.3);
+    --fwd-amber:#fbbf24;    --fwd-amber-soft:rgba(245,158,11,.14);    --fwd-amber-bd:rgba(251,191,36,.3);
+    --fwd-shadow:0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.24);
+    --fwd-shadow-hover:0 16px 28px -10px rgba(0,0,0,.5);
+  }
 
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+  .fwd-wrap{ padding:1rem; min-height:100vh; color:var(--foreground); }
+  @media(min-width:768px){ .fwd-wrap{ padding:1.5rem; } }
+  @media(min-width:1280px){ .fwd-wrap{ padding:2rem; } }
+  .fwd-inner{ max-width:1536px; margin-inline:auto; }
+
+  .fwd-header{ display:flex; flex-direction:column; gap:1rem; margin-bottom:2rem; }
+  @media(min-width:640px){ .fwd-header{ flex-direction:row; align-items:center; justify-content:space-between; } }
+  .fwd-title{ font-size:1.75rem; font-weight:800; letter-spacing:-0.02em; color:var(--foreground); margin:0; }
+  .fwd-subtitle{ font-size:.875rem; color:var(--muted-foreground); margin:.375rem 0 0; }
+
+  .fwd-back-btn{
+    display:inline-flex; align-items:center; gap:.5rem; width:max-content;
+    padding:.5rem 1rem; border-radius:.625rem; flex-shrink:0;
+    background:var(--secondary); color:var(--secondary-foreground); border:1px solid var(--border);
+    font-size:.875rem; font-weight:600; text-decoration:none; transition:background-color .2s ease, transform .2s ease;
+  }
+  .fwd-back-btn:hover{ background:var(--accent); transform:translateX(-2px); }
+  .fwd-back-btn svg{ width:1rem; height:1rem; flex-shrink:0; }
+
+  .fwd-inv-list{ display:flex; flex-direction:column; gap:1rem; }
+  .fwd-inv-card{
+    display:flex; align-items:center; justify-content:space-between; gap:1rem;
+    padding:1.25rem; border-radius:1rem; text-decoration:none;
+    background:var(--card); border:1px solid var(--border); box-shadow:var(--fwd-shadow);
+    transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+  }
+  .fwd-inv-card:hover{ transform:translateY(-3px); box-shadow:var(--fwd-shadow-hover); border-color:var(--fwd-emerald-bd); }
+
+  .fwd-inv-main{ display:flex; align-items:center; gap:1rem; min-width:0; flex:1; }
+  @media(min-width:768px){ .fwd-inv-main{ gap:1.5rem; } }
+
+  .fwd-inv-date{
+    flex-shrink:0; min-width:70px; text-align:center; border-radius:.875rem; padding:.55rem .75rem;
+    background:var(--fwd-emerald-soft); border:1px solid var(--fwd-emerald-bd);
+  }
+  .fwd-inv-month{ font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--fwd-emerald); }
+  .fwd-inv-day{ font-size:1.375rem; font-weight:900; color:var(--foreground); margin-top:.125rem; }
+
+  .fwd-inv-body{ display:flex; flex-direction:column; gap:.375rem; min-width:0; }
+  .fwd-inv-badge{
+    display:inline-flex; align-items:center; gap:.375rem; width:max-content;
+    padding:.2rem .65rem; border-radius:9999px; font-size:.65rem; font-weight:800;
+    text-transform:uppercase; letter-spacing:.06em;
+    background:var(--fwd-amber-soft); color:var(--fwd-amber); border:1px solid var(--fwd-amber-bd);
+  }
+  .fwd-inv-pulse{ width:.4rem; height:.4rem; border-radius:9999px; background:var(--fwd-amber); flex-shrink:0; animation:fwd-pulse 2s ease-in-out infinite; }
+  @keyframes fwd-pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
+
+  .fwd-inv-title{ font-size:1rem; font-weight:700; color:var(--foreground); margin:0; line-height:1.35; }
+  .fwd-inv-card:hover .fwd-inv-title{ color:var(--fwd-emerald); }
+
+  .fwd-inv-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:1rem; font-size:.75rem; font-weight:600; color:var(--muted-foreground); }
+  .fwd-inv-meta-item{ display:inline-flex; align-items:center; gap:.3rem; white-space:nowrap; }
+  .fwd-inv-meta-item svg{ width:.85rem; height:.85rem; flex-shrink:0; color:var(--fwd-amber); }
+  .fwd-inv-meta-item span{ text-transform:capitalize; }
+
+  .fwd-inv-arrow{ width:1.25rem; height:1.25rem; color:var(--muted-foreground); flex-shrink:0; transition:color .2s ease; }
+  .fwd-inv-card:hover .fwd-inv-arrow{ color:var(--fwd-emerald); }
+
+  .fwd-empty-box{
+    text-align:center; padding:3rem 1.5rem; border-radius:1rem;
+    background:var(--card); border:1px dashed var(--border);
+  }
+  .fwd-empty-icon{
+    width:3.5rem; height:3.5rem; border-radius:9999px; margin:0 auto .75rem;
+    background:var(--muted); display:flex; align-items:center; justify-content:center;
+  }
+  .fwd-empty-icon svg{ width:1.75rem; height:1.75rem; color:var(--muted-foreground); }
+  .fwd-empty-text{ font-size:.875rem; font-weight:500; color:var(--muted-foreground); margin:0; }
+</style>
+
+<div class="fwd-wrap">
+  <div class="fwd-inner">
+
+    <div class="fwd-header">
       <div>
-        <h1 class="text-3xl font-bold tracking-tight text-white opacity-90">Kotak Masuk</h1>
-        <p class="text-sm text-zinc-400 mt-1">Undangan rapat yang menunggu konfirmasi Anda</p>
+        <h1 class="fwd-title">Kotak Masuk</h1>
+        <p class="fwd-subtitle">Undangan rapat yang menunggu konfirmasi Anda</p>
       </div>
-      <a href="/home"
-        class="inline-flex items-center justify-center rounded-lg bg-zinc-800/80 border border-zinc-700/50 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors">
-        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <a href="/home" class="fwd-back-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
         </svg>
         Kembali ke Dashboard
@@ -18,53 +103,41 @@
     </div>
 
     <% if (undangan && undangan.length > 0) { %>
-      <div class="flex flex-col gap-4">
+      <div class="fwd-inv-list">
         <% undangan.forEach(item => { %>
-          <a href="/invitations/<%= item.participant_id %>"
-            class="bg-white rounded-2xl p-5 flex items-center justify-between shadow-xs text-zinc-900 hover:shadow-md hover:-translate-y-0.5 transition-all duration-150 group">
+          <a href="/invitations/<%= item.participant_id %>" class="fwd-inv-card">
 
-            <div class="flex items-center gap-4 md:gap-6">
-              <!-- Tanggal -->
-              <div class="bg-[#f0fdf4] text-center rounded-2xl py-2 px-4 min-w-[75px] border border-emerald-100/50 shrink-0">
-                <div class="text-[#16a34a] text-xs font-black uppercase tracking-widest">
-                  <%= new Date(item.meeting_date).toLocaleString('id-ID', { month: 'short' }) %>
-                </div>
-                <div class="text-2xl font-black text-zinc-900 mt-0.5">
-                  <%= new Date(item.meeting_date).getDate() %>
-                </div>
+            <div class="fwd-inv-main">
+              <div class="fwd-inv-date">
+                <div class="fwd-inv-month"><%= new Date(item.meeting_date).toLocaleString('id-ID', { month: 'short' }) %></div>
+                <div class="fwd-inv-day"><%= new Date(item.meeting_date).getDate() %></div>
               </div>
 
-              <!-- Info -->
-              <div class="flex flex-col gap-1.5">
-                <div class="flex items-center gap-2">
-                  <span class="inline-flex items-center gap-1 bg-orange-50 text-orange-600 border border-orange-100 text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full">
-                    <span class="w-1.5 h-1.5 bg-orange-500 rounded-full inline-block animate-pulse"></span>
-                    Menunggu Konfirmasi
-                  </span>
-                </div>
-                <h3 class="text-base font-bold text-zinc-900 leading-snug group-hover:text-emerald-700 transition-colors">
-                  <%= item.title %>
-                </h3>
-                <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-zinc-500">
-                  <div class="flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div class="fwd-inv-body">
+                <span class="fwd-inv-badge">
+                  <span class="fwd-inv-pulse"></span>
+                  Menunggu Konfirmasi
+                </span>
+                <h3 class="fwd-inv-title"><%= item.title %></h3>
+                <div class="fwd-inv-meta">
+                  <div class="fwd-inv-meta-item">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <%= item.start_time.substring(0, 5) %> - <%= item.end_time.substring(0, 5) %>
                   </div>
-                  <div class="flex items-center gap-1 capitalize">
-                    <svg class="w-3.5 h-3.5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="fwd-inv-meta-item">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <%= item.meeting_type %>
+                    <span><%= item.meeting_type %></span>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Arrow -->
-            <svg class="w-5 h-5 text-zinc-300 group-hover:text-emerald-500 transition-colors shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="fwd-inv-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
           </a>
@@ -72,15 +145,13 @@
       </div>
 
     <% } else { %>
-      <div class="bg-white rounded-2xl p-12 text-center shadow-xs border border-dashed border-zinc-200">
-        <div class="flex flex-col items-center gap-3">
-          <div class="w-14 h-14 bg-zinc-100 rounded-full flex items-center justify-center">
-            <svg class="w-7 h-7 text-zinc-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-          </div>
-          <p class="text-zinc-400 font-medium text-sm">Tidak ada undangan yang menunggu konfirmasi.</p>
+      <div class="fwd-empty-box">
+        <div class="fwd-empty-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
         </div>
+        <p class="fwd-empty-text">Tidak ada undangan yang menunggu konfirmasi.</p>
       </div>
     <% } %>
 

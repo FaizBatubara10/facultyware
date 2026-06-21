@@ -437,6 +437,7 @@ const index = async (req, res, next) => {
 
     res.render('meetings/index', {
       title: 'Meeting Dashboard',
+      user: req.session.employeeName,
       meetings,
       employees,
       canCreateMeeting,
@@ -488,6 +489,7 @@ const create = async (req, res, next) => {
 
     res.render('meetings/create', {
       title: 'Tambah Meeting',
+      user: req.session.employeeName,
       employees,
       currentEmployee
     });
@@ -709,6 +711,7 @@ const show = async (req, res, next) => {
 
     res.render('meetings/show', {
       title: 'Detail Meeting',
+      user: req.session.employeeName,
       meeting,
       participants,
       externalParticipants,
@@ -802,6 +805,7 @@ const edit = async (req, res, next) => {
 
     res.render('meetings/edit', {
       title: 'Edit Meeting',
+      user: req.session.employee,
       meeting,
       employees,
       selectedParticipantsData,
@@ -905,30 +909,69 @@ const update = async (req, res, next) => {
       ]
     );
 
-    await db.query(
-      `DELETE FROM meeting_participants WHERE meeting_id = ?`,
+    // --- PESERTA INTERNAL: diff-based, jangan hapus yang sudah ada ---
+    const [existingInternalRows] = await db.query(
+      `SELECT employee_id FROM meeting_participants WHERE meeting_id = ?`,
       [meetingId]
     );
+    const existingInternalIds = existingInternalRows.map((r) => Number(r.employee_id));
+    const newInternalIds = participants.map(Number);
 
-    await db.query(
-      `DELETE FROM meeting_external_participants WHERE meeting_id = ?`,
-      [meetingId]
-    );
+    const internalToRemove = existingInternalIds.filter((id) => !newInternalIds.includes(id));
+    const internalToAdd = newInternalIds.filter((id) => !existingInternalIds.includes(id));
 
-    for (const employeeId of participants) {
+    if (internalToRemove.length > 0) {
+      const placeholders = internalToRemove.map(() => '?').join(',');
+      await db.query(
+        `DELETE FROM meeting_participants WHERE meeting_id = ? AND employee_id IN (${placeholders})`,
+        [meetingId, ...internalToRemove]
+      );
+    }
+
+    for (const employeeId of internalToAdd) {
       await db.query(
         `INSERT INTO meeting_participants
-          (
-            meeting_id,
-            employee_id,
-            status,
-            created_at,
-            updated_at
-          )
+          (meeting_id, employee_id, status, created_at, updated_at)
          VALUES (?, ?, 'invited', NOW(), NOW())`,
         [meetingId, employeeId]
       );
     }
+
+    // --- PESERTA EKSTERNAL: diff-based pakai key name+email+institution ---
+    const [existingExternalRows] = await db.query(
+      `SELECT id, name, email, institution FROM meeting_external_participants WHERE meeting_id = ?`,
+      [meetingId]
+    );
+
+    const makeKey = (name, email, institution) =>
+      `${String(name || '').trim().toLowerCase()}|${String(email || '').trim().toLowerCase()}|${String(institution || '').trim().toLowerCase()}`;
+
+    const existingExternalMap = new Map(
+      existingExternalRows.map((row) => [makeKey(row.name, row.email, row.institution), row.id])
+    );
+    const newExternalKeys = new Set(
+      externalParticipants.map((p) => makeKey(p.name, p.email, p.institution))
+    );
+
+    const externalIdsToRemove = existingExternalRows
+      .filter((row) => !newExternalKeys.has(makeKey(row.name, row.email, row.institution)))
+      .map((row) => row.id);
+
+    if (externalIdsToRemove.length > 0) {
+      const placeholders = externalIdsToRemove.map(() => '?').join(',');
+      await db.query(
+        `DELETE FROM meeting_external_participants WHERE id IN (${placeholders})`,
+        externalIdsToRemove
+      );
+    }
+
+    const externalToAdd = externalParticipants.filter(
+      (p) => !existingExternalMap.has(makeKey(p.name, p.email, p.institution))
+    );
+
+    await saveExternalParticipants(meetingId, externalToAdd);
+
+    res.redirect(`/meetings/${meetingId}`);
 
     await saveExternalParticipants(meetingId, externalParticipants);
 

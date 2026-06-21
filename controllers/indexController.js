@@ -92,7 +92,7 @@ const home = async (req, res, next) => {
 
     res.render("home", { 
       title: "Home", 
-      user: req.session.username,
+      user: req.session.employeeName,
       totalMeetingBulanIni,
       meetingMendatang,
       undanganTerbaru,

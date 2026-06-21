@@ -1,251 +1,466 @@
 <%- include('partials/header') %>
- <div class="p-4 md:p-6 xl:p-8 min-h-screen">
-    <div class="max-w-screen-2xl mx-auto">
-      
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+
+<style>
+  /* ===== Token warna khusus dashboard (adaptif light/dark) =====
+     Variabel ini ditambahkan sendiri (tidak bergantung pada Tailwind build statis
+     yang ternyata tidak meng-cover class custom seperti zinc/emerald/orange).
+     Otomatis berubah saat <html class="dark"> aktif, karena diset ulang di .dark. */
+  :root{
+    --fwd-emerald:#059669;       --fwd-emerald-soft:#ecfdf5;  --fwd-emerald-bd:#a7f3d0;
+    --fwd-blue:#2563eb;          --fwd-blue-soft:#eff6ff;     --fwd-blue-bd:#bfdbfe;
+    --fwd-amber:#b45309;         --fwd-amber-soft:#fffbeb;    --fwd-amber-bd:#fde68a;
+    --fwd-red:#dc2626;           --fwd-red-soft:#fef2f2;      --fwd-red-bd:#fecaca;
+    --fwd-shadow:0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --fwd-shadow-hover:0 12px 24px -8px rgba(0,0,0,.12);
+  }
+  .dark{
+    --fwd-emerald:#34d399;       --fwd-emerald-soft:rgba(16,185,129,.12);  --fwd-emerald-bd:rgba(52,211,153,.3);
+    --fwd-blue:#60a5fa;          --fwd-blue-soft:rgba(59,130,246,.12);     --fwd-blue-bd:rgba(96,165,250,.3);
+    --fwd-amber:#fbbf24;         --fwd-amber-soft:rgba(245,158,11,.14);    --fwd-amber-bd:rgba(251,191,36,.3);
+    --fwd-red:#f87171;           --fwd-red-soft:rgba(239,68,68,.14);       --fwd-red-bd:rgba(248,113,113,.3);
+    --fwd-shadow:0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.24);
+    --fwd-shadow-hover:0 16px 28px -10px rgba(0,0,0,.5);
+  }
+
+  .fwd-wrap{ padding:1rem; min-height:100vh; color:var(--foreground); }
+  @media(min-width:768px){ .fwd-wrap{ padding:1.5rem; } }
+  @media(min-width:1280px){ .fwd-wrap{ padding:2rem; } }
+  .fwd-inner{ max-width:1536px; margin-inline:auto; }
+
+  /* ---- Header atas: judul + tombol, selalu sejajar, tidak pernah turun ---- */
+  .fwd-header{ display:flex; flex-direction:row; align-items:center; justify-content:space-between; gap:1rem; margin-bottom:2rem; }
+  .fwd-title-group{ min-width:0; }
+  .fwd-title{
+    font-size:1.75rem; font-weight:800; letter-spacing:-0.02em; margin:0;
+    background:linear-gradient(90deg, var(--fwd-emerald), var(--foreground));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  @media(min-width:640px){ .fwd-title{ font-size:2.25rem; } }
+  .fwd-subtitle{ color:var(--muted-foreground); font-size:.875rem; font-weight:500; margin:.375rem 0 0; }
+  @media(max-width:639px){ .fwd-subtitle{ display:none; } }
+
+  .fwd-btn-primary{
+    display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+    height:38px; padding:0 1rem; border-radius:.75rem; flex-shrink:0;
+    background:var(--fwd-emerald); color:#fff; text-decoration:none;
+    font-size:.8rem; font-weight:800; white-space:nowrap;
+    box-shadow:0 8px 18px -6px var(--fwd-emerald); transition:transform .2s ease, opacity .2s ease;
+  }
+  .fwd-btn-primary:hover{ opacity:.92; transform:translateY(-1px); }
+  .fwd-btn-primary svg{ width:1rem; height:1rem; flex-shrink:0; }
+  .fwd-btn-primary .fwd-btn-label{ }
+  @media(max-width:399px){ .fwd-btn-primary .fwd-btn-label{ display:none; } .fwd-btn-primary{ width:38px; padding:0; } }
+
+  /* ---- Grid 4 kartu statistik ---- */
+  .fwd-stats{ display:grid; grid-template-columns:1fr; gap:1.25rem; margin-bottom:2rem; }
+  @media(min-width:640px){ .fwd-stats{ grid-template-columns:1fr 1fr; } }
+  @media(min-width:1024px){ .fwd-stats{ grid-template-columns:repeat(4,1fr); } }
+
+  .fwd-stat-card{
+    position:relative; overflow:hidden; min-height:9rem; border-radius:1rem; padding:1.5rem;
+    background:var(--card); border:1px solid var(--border); box-shadow:var(--fwd-shadow);
+    display:flex; flex-direction:column; justify-content:space-between;
+    transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .fwd-stat-card:hover{ transform:translateY(-4px); box-shadow:var(--fwd-shadow-hover); }
+  .fwd-stat-card .fwd-blob{ position:absolute; top:-1.5rem; right:-1.5rem; width:6rem; height:6rem; border-radius:9999px; filter:blur(20px); opacity:.6; transition:transform .4s ease; }
+  .fwd-stat-card:hover .fwd-blob{ transform:scale(1.4); }
+  .fwd-stat-label{ font-size:.6875rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color:var(--muted-foreground); position:relative; }
+  .fwd-stat-value{ font-size:2.25rem; font-weight:900; margin:.5rem 0 0; color:var(--foreground); position:relative; }
+  .fwd-stat-footrow{ display:flex; align-items:center; gap:.5rem; font-size:.75rem; color:var(--muted-foreground); font-weight:500; position:relative; margin-top:.5rem; }
+  .fwd-stat-uparrow{ display:flex; align-items:center; justify-content:center; width:1rem; height:1rem; border-radius:9999px; font-size:.65rem; flex-shrink:0; }
+
+  .fwd-stat-action{
+    display:inline-flex; align-items:center; gap:.375rem; width:max-content;
+    margin-top:.625rem; padding:.375rem .75rem; border-radius:.5rem;
+    font-size:.7rem; font-weight:700; text-decoration:none; position:relative;
+    transition:background-color .2s ease;
+  }
+
+  .fwd-accent-emerald .fwd-blob{ background:var(--fwd-emerald); }
+  .fwd-accent-blue .fwd-blob{ background:var(--fwd-blue); }
+  .fwd-accent-amber .fwd-blob{ background:var(--fwd-amber); }
+  .fwd-accent-red .fwd-blob{ background:var(--fwd-red); }
+
+  .fwd-stat-card:hover.fwd-accent-emerald{ border-color:var(--fwd-emerald-bd); }
+  .fwd-stat-card:hover.fwd-accent-blue{ border-color:var(--fwd-blue-bd); }
+  .fwd-stat-card:hover.fwd-accent-amber{ border-color:var(--fwd-amber-bd); }
+  .fwd-stat-card:hover.fwd-accent-red{ border-color:var(--fwd-red-bd); }
+
+  .fwd-text-emerald{ color:var(--fwd-emerald); } .fwd-text-blue{ color:var(--fwd-blue); }
+  .fwd-text-amber{ color:var(--fwd-amber); } .fwd-text-red{ color:var(--fwd-red); }
+  .fwd-up-emerald{ background:var(--fwd-emerald-soft); color:var(--fwd-emerald); }
+
+  .fwd-action-amber{ background:var(--fwd-amber-soft); color:var(--fwd-amber); border:1px solid var(--fwd-amber-bd); }
+  .fwd-action-amber:hover{ background:var(--fwd-amber-bd); }
+  .fwd-action-red{ background:var(--fwd-red-soft); color:var(--fwd-red); border:1px solid var(--fwd-red-bd); }
+  .fwd-action-red:hover{ background:var(--fwd-red-bd); }
+
+  /* ---- Grid utama: kiri (2 kolom) + kanan (1 kolom) ---- */
+  .fwd-main{ display:grid; grid-template-columns:1fr; gap:1.5rem; }
+  @media(min-width:1024px){ .fwd-main{ grid-template-columns:2fr 1fr; } }
+  .fwd-col{ display:flex; flex-direction:column; gap:1.5rem; min-width:0; }
+
+  /* ---- Header tiap section (judul + tombol "Lihat semua") ---- */
+  .fwd-section-head{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:.25rem; }
+  .fwd-section-title{ font-size:1.125rem; font-weight:800; letter-spacing:-0.01em; color:var(--foreground); display:flex; align-items:center; gap:.5rem; margin:0; }
+  .fwd-link-btn{
+    display:inline-flex; align-items:center; gap:.375rem; height:32px; padding:0 .75rem;
+    border-radius:.5rem; font-size:.72rem; font-weight:800; text-decoration:none;
+    background:var(--secondary); color:var(--secondary-foreground); border:1px solid var(--border);
+    transition:background-color .2s ease, transform .2s ease; white-space:nowrap; flex-shrink:0;
+  }
+  .fwd-link-btn:hover{ background:var(--accent); transform:translateY(-1px); }
+
+  /* ---- Kartu Meeting Mendatang ---- */
+  .fwd-meeting-list{ display:flex; flex-direction:column; gap:1rem; margin-top:1rem; }
+  .fwd-meeting-card{
+    display:flex; align-items:center; gap:1rem; padding:1.125rem 1.25rem; border-radius:1rem;
+    background:var(--card); border:1px solid var(--border); box-shadow:var(--fwd-shadow);
+    cursor:pointer; transition:transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+  }
+  .fwd-meeting-card:hover{ transform:translateY(-2px); box-shadow:var(--fwd-shadow-hover); border-color:var(--fwd-emerald-bd); }
+  .fwd-meeting-date{
+    flex-shrink:0; min-width:64px; text-align:center; border-radius:.75rem; padding:.5rem .75rem;
+    background:var(--fwd-emerald-soft); border:1px solid var(--fwd-emerald-bd);
+    transition:background-color .25s ease;
+  }
+  .fwd-meeting-card:hover .fwd-meeting-date{ background:var(--fwd-emerald); }
+  .fwd-meeting-month{ font-size:.625rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--fwd-emerald); transition:color .25s ease; }
+  .fwd-meeting-card:hover .fwd-meeting-month{ color:#fff; }
+  .fwd-meeting-day{ font-size:1.375rem; font-weight:900; color:var(--foreground); transition:color .25s ease; }
+  .fwd-meeting-card:hover .fwd-meeting-day{ color:#fff; }
+
+  .fwd-meeting-info{ flex:1; min-width:0; display:flex; flex-direction:column; gap:.5rem; }
+  .fwd-meeting-title{ font-size:1rem; font-weight:700; color:var(--foreground); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fwd-meeting-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:.5rem; }
+  .fwd-meeting-badge{
+    display:inline-flex; align-items:center; gap:.375rem; padding:.3rem .6rem; border-radius:.5rem;
+    background:var(--muted); color:var(--muted-foreground); font-size:.72rem; font-weight:600; white-space:nowrap;
+  }
+  .fwd-meeting-badge svg{ width:.85rem; height:.85rem; flex-shrink:0; color:var(--fwd-amber); }
+
+  .fwd-meeting-status{
+    flex-shrink:0; margin-left:auto; padding:.4rem 1rem; border-radius:9999px;
+    font-size:.72rem; font-weight:800; white-space:nowrap;
+    background:var(--fwd-amber-soft); color:var(--fwd-amber); border:1px solid var(--fwd-amber-bd);
+  }
+  @media(max-width:480px){ .fwd-meeting-status{ display:none; } }
+
+  .fwd-empty{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
+    padding:2rem; border-radius:1rem; border:1px dashed var(--border); background:var(--muted); margin-top:1rem;
+  }
+  .fwd-empty-icon{ width:3.5rem; height:3.5rem; border-radius:9999px; background:var(--card); display:flex; align-items:center; justify-content:center; font-size:1.5rem; margin-bottom:.75rem; box-shadow:var(--fwd-shadow); }
+  .fwd-empty-title{ font-size:.875rem; font-weight:700; color:var(--foreground); margin:0 0 .25rem; }
+  .fwd-empty-desc{ font-size:.75rem; color:var(--muted-foreground); max-width:220px; margin:0; }
+
+  /* ---- Kartu generik (chart / inbox / notulen) ---- */
+  .fwd-card{ position:relative; overflow:hidden; border-radius:1rem; padding:1.5rem; background:var(--card); border:1px solid var(--border); box-shadow:var(--fwd-shadow); }
+  .fwd-card-topbar{ position:absolute; top:0; left:0; right:0; height:4px; }
+  .fwd-topbar-blue{ background:linear-gradient(90deg, var(--fwd-blue), #22d3ee); }
+  .fwd-topbar-orange{ background:linear-gradient(90deg, var(--fwd-amber), var(--fwd-red)); }
+  .fwd-topbar-emerald{ background:linear-gradient(90deg, var(--fwd-emerald), #14b8a6); }
+
+  .fwd-card-head{ display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:1rem; }
+  .fwd-card-title{ font-size:1rem; font-weight:800; color:var(--foreground); display:flex; align-items:center; gap:.5rem; margin:0; }
+  .fwd-card-icon{ padding:.25rem; border-radius:.5rem; }
+  .fwd-icon-blue{ background:var(--fwd-blue-soft); color:var(--fwd-blue); }
+  .fwd-icon-orange{ background:var(--fwd-amber-soft); color:var(--fwd-amber); }
+  .fwd-icon-emerald{ background:var(--fwd-emerald-soft); color:var(--fwd-emerald); }
+  .fwd-year-tag{ font-size:.7rem; font-weight:700; padding:.25rem .6rem; border-radius:.5rem; background:var(--muted); color:var(--muted-foreground); }
+
+  .fwd-list{ display:flex; flex-direction:column; gap:.4rem; }
+  .fwd-list-item{
+    display:flex; align-items:center; gap:.75rem; padding:.65rem; border-radius:.75rem;
+    text-decoration:none; border:1px solid transparent; transition:background-color .2s ease, border-color .2s ease;
+  }
+  .fwd-list-item:hover{ background:var(--muted); border-color:var(--border); }
+  .fwd-list-icon{ flex-shrink:0; padding:.55rem; border-radius:.75rem; display:flex; align-items:center; justify-content:center; }
+  .fwd-list-icon svg{ width:1rem; height:1rem; }
+  .fwd-list-body{ flex:1; min-width:0; }
+  .fwd-list-title{ font-size:.875rem; font-weight:700; color:var(--foreground); margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fwd-list-sub{ font-size:.72rem; font-weight:500; color:var(--muted-foreground); margin:.125rem 0 0; }
+  .fwd-dot{ width:.6rem; height:.6rem; border-radius:9999px; background:var(--fwd-amber); flex-shrink:0; box-shadow:0 0 8px var(--fwd-amber); }
+</style>
+
+<div class="fwd-wrap">
+  <div class="fwd-inner">
+
+    <div class="fwd-header">
+      <div class="fwd-title-group">
+        <h1 class="fwd-title">Dashboard</h1>
+        <p class="fwd-subtitle">Ringkasan aktivitas dan jadwal meeting Anda.</p>
+      </div>
+      <a class="fwd-btn-primary" href="/meetings">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+        <span class="fwd-btn-label">Semua Rapat</span>
+      </a>
+    </div>
+
+    <div class="fwd-stats">
+
+      <div class="fwd-stat-card fwd-accent-emerald">
+        <div class="fwd-blob"></div>
         <div>
-          <h1 class="text-3xl font-bold tracking-tight text-white opacity-90">Dashboard</h1>
+          <p class="fwd-stat-label">Meeting Bulan Ini</p>
+          <h2 class="fwd-stat-value"><%= totalMeetingBulanIni %></h2>
         </div>
-        <div class="flex items-center gap-3">
-          <a class="inline-flex items-center justify-center rounded-lg bg-zinc-800/80 border border-zinc-700/50 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 transition-colors" href="/meetings">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-            Semua Rapat
-          </a>
-        </div>
+        <p class="fwd-stat-footrow">
+          <span class="fwd-stat-uparrow fwd-up-emerald">↑</span>
+          jumlah meeting
+        </p>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        
-        <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs flex flex-col justify-between h-36">
-          <div>
-            <p class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Meeting Bulan Ini</p>
-            <h2 class="text-4xl font-black mt-2 text-zinc-900"><%= totalMeetingBulanIni %></h2>
-          </div>
-          <p class="text-xs text-emerald-600 font-semibold flex items-center gap-1">
-            ↑ <span class="text-zinc-400 font-normal">Diambil dari database</span>
-          </p>
+      <div class="fwd-stat-card fwd-accent-blue">
+        <div class="fwd-blob"></div>
+        <div>
+          <p class="fwd-stat-label">Total Peserta</p>
+          <h2 class="fwd-stat-value fwd-text-blue"><%= totalPeserta %></h2>
         </div>
-        
-        <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs flex flex-col justify-between h-36">
-          <div>
-            <p class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Total Peserta</p>
-            <h2 class="text-4xl font-black mt-2 text-blue-500"><%= totalPeserta %></h2>
-          </div>
-          <p class="text-xs text-zinc-400 font-normal">Peserta unik di semua meeting</p>
-        </div>
-
-        <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs flex flex-col justify-between h-36">
-          <div>
-            <p class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Menunggu Konfirmasi</p>
-            <h2 class="text-4xl font-black mt-2 text-orange-500"><%= totalUndanganPending %></h2>
-          </div>
-          <a href="/invitations/inbox" class="text-xs text-orange-500 hover:text-orange-600 font-semibold flex items-center gap-1 transition-colors">
-            Lihat kotak masuk →
-          </a>
-        </div>
-
-        <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs flex flex-col justify-between h-36">
-          <div>
-            <p class="text-[11px] font-bold text-zinc-400 uppercase tracking-widest">Notulensi</p>
-            <h2 class="text-4xl font-black mt-2 text-red-500"><%= totalNotulenPending %></h2>
-          </div>
-          <a href="/meetings/upload-minutes" class="text-xs text-red-400 hover:text-red-500 font-semibold flex items-center gap-1 transition-colors">
-            Upload notulensi →
-          </a>
-        </div>
-
+        <p class="fwd-stat-footrow">Peserta unik di semua meeting</p>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        <div class="lg:col-span-2 flex flex-col gap-6">
+      <div class="fwd-stat-card fwd-accent-amber">
+        <div class="fwd-blob"></div>
+        <div>
+          <p class="fwd-stat-label">Menunggu Konfirmasi</p>
+          <h2 class="fwd-stat-value fwd-text-amber"><%= totalUndanganPending %></h2>
+        </div>
+        <a href="/invitations/inbox" class="fwd-stat-action fwd-action-amber">
+          Lihat kotak masuk <span>→</span>
+        </a>
+      </div>
 
-          <div class="flex flex-col gap-4">
-            <div class="flex justify-between items-center mb-1">
-              <h2 class="text-lg font-bold tracking-tight text-white/80">Meeting Mendatang</h2>
-              <a class="text-xs text-zinc-400 hover:text-white transition-colors" href="/meetings">Lihat semua →</a>
-            </div>
+      <div class="fwd-stat-card fwd-accent-red">
+        <div class="fwd-blob"></div>
+        <div>
+          <p class="fwd-stat-label">Notulensi</p>
+          <h2 class="fwd-stat-value fwd-text-red"><%= totalNotulenPending %></h2>
+        </div>
+        <a href="/meetings/upload-minutes" class="fwd-stat-action fwd-action-red">
+          lihat notulensi <span>→</span>
+        </a>
+      </div>
 
-            <div class="flex flex-col gap-4">
-              <% if (meetingMendatang && meetingMendatang.length > 0) { %>
-                <% meetingMendatang.forEach(meeting => { %>
-                  
-                  <div class="bg-white rounded-2xl p-5 flex items-center justify-between shadow-xs text-zinc-900">
-                    <div class="flex items-center gap-4 md:gap-6">
-                      
-                      <div class="bg-[#f0fdf4] text-center rounded-2xl py-2 px-4 min-w-[75px] border border-emerald-100/50">
-                        <div class="text-[#16a34a] text-xs font-black uppercase tracking-widest">
-                          <%= new Date(meeting.meeting_date).toLocaleString('id-ID', { month: 'short' }) %>
-                        </div>
-                        <div class="text-2xl font-black text-zinc-900 mt-0.5">
-                          <%= new Date(meeting.meeting_date).getDate() %>
-                        </div>
-                      </div>
+    </div>
 
-                      <div class="flex flex-col gap-1.5">
-                        <h3 class="text-lg font-bold text-zinc-900 leading-snug"><%= meeting.title %></h3>
-                        <div class="flex flex-wrap items-center gap-4 text-xs font-semibold text-zinc-500">
-                          <div class="flex items-center gap-1">
-                            <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <%= meeting.start_time.substring(0, 5) %> - <%= meeting.end_time.substring(0, 5) %>
-                          </div>
-                          <div class="flex items-center gap-1">
-                            <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                            <span class="capitalize"><%= meeting.meeting_type %></span>
-                          </div>
-                        </div>
-                      </div>
+    <div class="fwd-main">
 
-                    </div>
+      <div class="fwd-col">
 
-                    <div class="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-100">
-                      Terjadwal
+        <div>
+          <div class="fwd-section-head">
+            <h2 class="fwd-section-title">📅 Meeting Mendatang</h2>
+            <a class="fwd-link-btn" href="/meetings">Lihat Semua</a>
+          </div>
+
+          <div class="fwd-meeting-list">
+            <% if (meetingMendatang && meetingMendatang.length > 0) { %>
+              <% meetingMendatang.forEach(meeting => { %>
+
+                <div class="fwd-meeting-card" onclick="window.location.href='/meetings'">
+                  <div class="fwd-meeting-date">
+                    <div class="fwd-meeting-month"><%= new Date(meeting.meeting_date).toLocaleString('id-ID', { month: 'short' }) %></div>
+                    <div class="fwd-meeting-day"><%= new Date(meeting.meeting_date).getDate() %></div>
+                  </div>
+
+                  <div class="fwd-meeting-info">
+                    <h3 class="fwd-meeting-title"><%= meeting.title %></h3>
+                    <div class="fwd-meeting-meta">
+                      <span class="fwd-meeting-badge">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span><%= meeting.start_time.substring(0, 5) %> - <%= meeting.end_time.substring(0, 5) %></span>
+                      </span>
+                      <span class="fwd-meeting-badge">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        <span style="text-transform:capitalize"><%= meeting.meeting_type %></span>
+                      </span>
                     </div>
                   </div>
 
-                <% }) %>
-              <% } else { %>
-                <div class="bg-white rounded-2xl p-8 text-center text-zinc-400 font-medium shadow-xs border border-dashed border-zinc-200">
-                  Tidak ada jadwal meeting mendatang yang tercatat di database.
+                  <span class="fwd-meeting-status">Terjadwal</span>
                 </div>
-              <% } %>
-            </div>
-          </div>
 
-          <!-- Widget Grafik Rapat per Bulan -->
-          <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-base font-bold text-zinc-900 tracking-tight">Rapat per Bulan</h3>
-              <span class="text-xs text-zinc-400 font-medium"><%= new Date().getFullYear() %></span>
-            </div>
-            <div class="relative" style="height: 220px;">
-              <canvas id="chartRapatBulanan"></canvas>
-            </div>
+              <% }) %>
+            <% } else { %>
+              <div class="fwd-empty">
+                <div class="fwd-empty-icon">🗓️</div>
+                <h4 class="fwd-empty-title">Semua Selesai!</h4>
+                <p class="fwd-empty-desc">Tidak ada jadwal meeting mendatang yang tercatat di database.</p>
+              </div>
+            <% } %>
           </div>
-
         </div>
 
-        <div class="flex flex-col gap-6">
-
-          <!-- Widget Kotak Masuk -->
-          <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-base font-bold text-zinc-900 tracking-tight">Kotak Masuk</h3>
-              <a href="/invitations/inbox" class="text-xs text-zinc-400 hover:text-white transition-colors">Lihat semua →</a>
-            </div>
-            <% if (undanganTerbaru && undanganTerbaru.length > 0) { %>
-              <div class="flex flex-col gap-2">
-                <% undanganTerbaru.forEach(item => { %>
-                  <a href="/invitations/<%= item.participant_id %>"
-                    class="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 transition-colors group">
-                    <div class="bg-orange-50 rounded-xl p-2 shrink-0">
-                      <svg class="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm font-semibold text-zinc-800 truncate group-hover:text-emerald-700 transition-colors">
-                        <%= item.title %>
-                      </p>
-                      <p class="text-xs text-zinc-400 mt-0.5">
-                        <%= new Date(item.meeting_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) %>
-                      </p>
-                    </div>
-                    <span class="w-2 h-2 bg-orange-400 rounded-full shrink-0 animate-pulse"></span>
-                  </a>
-                <% }) %>
-              </div>
-            <% } else { %>
-              <div class="flex flex-col items-center justify-center py-6 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                <svg class="w-8 h-8 text-zinc-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span class="text-sm text-zinc-400 font-medium text-center">Tidak ada undangan baru.</span>
-              </div>
-            <% } %>
+        <!-- Widget Grafik Rapat per Bulan -->
+        <div class="fwd-card">
+          <div class="fwd-card-topbar fwd-topbar-blue"></div>
+          <div class="fwd-card-head">
+            <h3 class="fwd-card-title"><span class="fwd-card-icon fwd-icon-blue">📊</span> Rapat per Bulan</h3>
+            <span class="fwd-year-tag"><%= new Date().getFullYear() %></span>
           </div>
+          <div style="position:relative; height:220px;">
+            <canvas id="chartRapatBulanan"></canvas>
+          </div>
+        </div>
 
-          <!-- Widget Notulen Terbaru -->
-          <div class="bg-white rounded-2xl p-6 text-zinc-900 shadow-xs">
-            <div class="flex justify-between items-center mb-4">
-              <h3 class="text-base font-bold text-zinc-900 tracking-tight">Notulen Terbaru</h3>
-              <a href="/meetings/upload-minutes" class="text-xs text-zinc-400 hover:text-white transition-colors">Lihat semua →</a>
-            </div>
+      </div>
 
-            <% if (notulenTerbaru && notulenTerbaru.length > 0) { %>
-              <div class="flex flex-col gap-2">
-                <% notulenTerbaru.forEach(item => { %>
-                  <div class="flex items-center gap-3 p-3 rounded-xl hover:bg-zinc-50 transition-colors">
-                    <div class="bg-emerald-50 rounded-xl p-2 shrink-0">
-                      <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-sm font-semibold text-zinc-800 truncate"><%= item.meeting_title %></p>
-                      <p class="text-xs text-zinc-400 mt-0.5"><%= item.uploaded_at %></p>
-                    </div>
+      <div class="fwd-col">
+
+        <!-- Widget Kotak Masuk -->
+        <div class="fwd-card">
+          <div class="fwd-card-topbar fwd-topbar-orange"></div>
+          <div class="fwd-card-head">
+            <h3 class="fwd-card-title"><span class="fwd-card-icon fwd-icon-orange">📥</span> Kotak Masuk</h3>
+            <a href="/invitations/inbox" class="fwd-link-btn">Lihat semua</a>
+          </div>
+          <% if (undanganTerbaru && undanganTerbaru.length > 0) { %>
+            <div class="fwd-list">
+              <% undanganTerbaru.forEach(item => { %>
+                <a href="/invitations/<%= item.participant_id %>" class="fwd-list-item">
+                  <div class="fwd-list-icon fwd-icon-orange">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
                   </div>
-                <% }) %>
-              </div>
-            <% } else { %>
-              <div class="flex flex-col items-center justify-center py-6 bg-zinc-50 rounded-xl border border-dashed border-zinc-200">
-                <svg class="w-8 h-8 text-zinc-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
-                <span class="text-sm text-zinc-400 font-medium text-center">Belum ada notulen yang diunggah.</span>
-              </div>
-            <% } %>
+                  <div class="fwd-list-body">
+                    <p class="fwd-list-title"><%= item.title %></p>
+                    <p class="fwd-list-sub"><%= new Date(item.meeting_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) %></p>
+                  </div>
+                  <span class="fwd-dot"></span>
+                </a>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="fwd-empty">
+              <div class="fwd-empty-icon">📬</div>
+              <span class="fwd-empty-title">Kotak Masuk Kosong</span>
+              <span class="fwd-empty-desc">Tidak ada undangan baru.</span>
+            </div>
+          <% } %>
+        </div>
+
+        <!-- Widget Notulen Terbaru -->
+        <div class="fwd-card">
+          <div class="fwd-card-topbar fwd-topbar-emerald"></div>
+          <div class="fwd-card-head">
+            <h3 class="fwd-card-title"><span class="fwd-card-icon fwd-icon-emerald">📝</span> Notulen Terbaru</h3>
+            <a href="/meetings/upload-minutes" class="fwd-link-btn">Lihat semua</a>
           </div>
 
+          <% if (notulenTerbaru && notulenTerbaru.length > 0) { %>
+            <div class="fwd-list">
+              <% notulenTerbaru.forEach(item => { %>
+                <div class="fwd-list-item" style="cursor:pointer;">
+                  <div class="fwd-list-icon fwd-icon-emerald">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div class="fwd-list-body">
+                    <p class="fwd-list-title"><%= item.meeting_title %></p>
+                    <p class="fwd-list-sub"><%= item.uploaded_at %></p>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="fwd-empty">
+              <div class="fwd-empty-icon">📁</div>
+              <span class="fwd-empty-title">Riwayat Kosong</span>
+              <span class="fwd-empty-desc">Belum ada notulen yang diunggah.</span>
+            </div>
+          <% } %>
         </div>
 
       </div>
 
     </div>
+
   </div>
+</div>
 
-  <!-- Chart.js (sementara via CDN di halaman ini, bisa dipindah ke footer.ejs kalau dipakai di halaman lain) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script>
-    (() => {
+<!-- Chart.js (sementara via CDN di halaman ini, bisa dipindah ke footer.ejs kalau dipakai di halaman lain) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  (() => {
+    // Tunggu sedikit agar DOM benar-benar siap dan chart library dimuat penuh
+    setTimeout(() => {
       const ctx = document.getElementById('chartRapatBulanan');
-      if (!ctx) return;
+      if (!ctx) {
+        console.warn('Canvas chartRapatBulanan tidak ditemukan');
+        return;
+      }
 
-      new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: <%- JSON.stringify(labelBulanRapat) %>,
-          datasets: [{
-            label: 'Jumlah Rapat',
-            data: <%- JSON.stringify(dataRapatBulanan) %>,
-            backgroundColor: '#10b981',
-            borderRadius: 6,
-            maxBarThickness: 32
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: (item) => `${item.parsed.y} rapat`
+      const isDarkMode = document.documentElement.classList.contains('dark');
+      const textColor = isDarkMode ? '#a1a1aa' : '#52525b';
+      const gridColor = isDarkMode ? '#27272a' : '#f4f4f5';
+
+      try {
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: <%- JSON.stringify(labelBulanRapat) %>,
+            datasets: [{
+              label: 'Jumlah Rapat',
+              data: <%- JSON.stringify(dataRapatBulanan) %>,
+              backgroundColor: '#10b981',
+              borderRadius: 8,
+              maxBarThickness: 36,
+              hoverBackgroundColor: '#059669'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+              duration: 1500,
+              easing: 'easeOutQuart'
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: isDarkMode ? '#18181b' : '#ffffff',
+                titleColor: isDarkMode ? '#ffffff' : '#18181b',
+                bodyColor: isDarkMode ? '#a1a1aa' : '#52525b',
+                borderColor: isDarkMode ? '#27272a' : '#e4e4e7',
+                borderWidth: 1,
+                padding: 12,
+                cornerRadius: 8,
+                callbacks: {
+                  label: (item) => ` ${item.parsed.y} rapat terjadwal`
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: { 
+                  stepSize: 1, 
+                  precision: 0,
+                  color: textColor,
+                  font: { family: 'Inter, sans-serif', size: 11 }
+                },
+                grid: { color: gridColor, drawBorder: false }
+              },
+              x: {
+                ticks: { 
+                  color: textColor,
+                  font: { family: 'Inter, sans-serif', size: 12, weight: '500' }
+                },
+                grid: { display: false, drawBorder: false }
               }
             }
-          },
-          scales: {
-            y: {
-              beginAtZero: true,
-              ticks: { stepSize: 1, precision: 0 },
-              grid: { color: '#f4f4f5' }
-            },
-            x: {
-              grid: { display: false }
-            }
           }
-        }
-      });
-    })();
-  </script>
+        });
+      } catch (e) {
+        console.error('Error saat merender Chart.js:', e);
+      }
+    }, 100);
+  })();
+</script>
 
 <%- include('partials/footer') %>

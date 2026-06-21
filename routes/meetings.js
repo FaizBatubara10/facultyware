@@ -16,7 +16,7 @@ router.post('/', isAuthenticated, isEmployee, meetingController.store);
 
 // ── Rute Notulensi (harus SEBELUM /:id agar tidak tertimpa) ────────────────
 router.get('/upload-minutes', isAuthenticated, minuteController.renderUploadMinutesForm);
-router.post('/upload-minutes', isAuthenticated, upload.single('file_notulensi'), minuteController.processUploadMinutes);
+router.post('/upload-minutes', isAuthenticated, upload.fields([{ name: 'file_notulensi', maxCount: 1 },{ name: 'file_dokumentasi', maxCount: 10 }]),minuteController.processUploadMinutes);
 
 // Hapus notulensi
 router.post('/minutes/:id/delete', isAuthenticated, minuteController.deleteMinute);

@@ -31,7 +31,7 @@ const inbox = async (req, res, next) => {
 
     res.render("invitations/inbox", {
       title: "Kotak Masuk Undangan",
-      user: req.session.username,
+      user: req.session.employeeName,
       undangan,
     });
   } catch (err) {
@@ -98,7 +98,7 @@ const detail = async (req, res, next) => {
 
     res.render("invitations/detail", {
       title: `Undangan: ${undangan.title}`,
-      user: req.session.username,
+      user: req.session.employeeName,
       undangan,
       peserta,
     });

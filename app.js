@@ -22,8 +22,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: false, limit: '15mb' }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -49,6 +49,9 @@ app.use(session({
   }
 }));
 
+const flash = require('connect-flash');
+app.use(flash());
+
 // Inject current user into all views
 app.use(setCurrentUser);
 
@@ -58,10 +61,22 @@ app.use("/meetings", meetingsRouter);
 app.use("/invitations", invitationsRouter);
 app.use("/api", apiRouter);
 
+// Tangani error Multer khusus
+const multer = require('multer');
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+    req.flash('error', 'File terlalu besar. Maksimum ukuran file adalah 10MB.');
+    return res.redirect('/meetings/upload-minutes');
+  }
+  next(err);
+});
+
 // catch 404 and forward to error handler
 app.use(notFoundHandler);
 
 // error handler
 app.use(errorHandler);
+
+
 
 module.exports = app;
