@@ -76,13 +76,18 @@ const home = async (req, res, next) => {
     );
     const totalPeserta = hasilTotalPeserta[0].total;
 
-    // 7. Grafik jumlah rapat per bulan (tahun ini, seluruh meeting)
-    const [hasilRapatBulanan] = await db.query(`
-      SELECT MONTH(meeting_date) AS bulan, COUNT(*) AS total
-      FROM meetings
-      WHERE YEAR(meeting_date) = YEAR(CURRENT_DATE())
-      GROUP BY MONTH(meeting_date)
-    `);
+    // 7. Grafik jumlah rapat per bulan (tahun ini, hanya yang user terlibat)
+const [hasilRapatBulanan] = await db.query(`
+  SELECT MONTH(m.meeting_date) AS bulan, COUNT(DISTINCT m.id) AS total
+  FROM meetings m
+  LEFT JOIN meeting_participants mp
+    ON m.id = mp.meeting_id
+    AND mp.employee_id = ?
+    AND mp.status = 'attended'
+  WHERE YEAR(m.meeting_date) = YEAR(CURRENT_DATE())
+    AND (m.organizer_id = ? OR mp.employee_id IS NOT NULL)
+  GROUP BY MONTH(m.meeting_date)
+`, [employeeId, employeeId]);
 
     const labelBulanRapat = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
     const dataRapatBulanan = labelBulanRapat.map((_, idx) => {

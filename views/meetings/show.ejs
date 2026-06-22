@@ -97,797 +97,393 @@
 %>
 
 <style>
-
-  :root {
-    --meeting-bg: #ffffff;
-    --meeting-bg-rgb: 255, 255, 255;
-    --meeting-surface: #fffdf9;
-    --meeting-surface-hover: #ffffff;
-    --meeting-muted-surface: #f8f5ef;
-    --meeting-soft-surface: #f2eee8;
-    --meeting-border: #ded8cd;
-    --meeting-border-strong: #d7d2c8;
-    --meeting-text: #111111;
-    --meeting-subtext: #625b50;
-    --meeting-muted-text: #8d887f;
-    --meeting-shadow: rgba(30, 28, 24, 0.08);
-    --meeting-shadow-soft: rgba(30, 28, 24, 0.05);
-    --meeting-overlay: rgba(0, 0, 0, 0.46);
-  }
-
-  html.dark,
-  body.dark,
-  .dark,
-  [data-theme="dark"] {
-    --meeting-bg: #050505;
-    --meeting-bg-rgb: 5, 5, 5;
-    --meeting-surface: #28231c;
-    --meeting-surface-hover: #332d24;
-    --meeting-muted-surface: #312b22;
-    --meeting-soft-surface: #3c352b;
-    --meeting-border: #4a4136;
-    --meeting-border-strong: #625647;
-    --meeting-text: #f8f6ef;
-    --meeting-subtext: #d5cdbf;
-    --meeting-muted-text: #b4aa9b;
-    --meeting-shadow: rgba(0, 0, 0, 0.42);
-    --meeting-shadow-soft: rgba(0, 0, 0, 0.28);
-    --meeting-overlay: rgba(0, 0, 0, 0.58);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --meeting-bg: #050505;
-      --meeting-bg-rgb: 5, 5, 5;
-      --meeting-surface: #121412;
-      --meeting-surface-hover: #191d1a;
-      --meeting-muted-surface: #171a17;
-      --meeting-soft-surface: #222820;
-      --meeting-border: #30362f;
-      --meeting-border-strong: #3a4238;
-      --meeting-text: #f8f8f4;
-      --meeting-subtext: #c6beb2;
-      --meeting-muted-text: #9f978b;
-      --meeting-shadow: rgba(0, 0, 0, 0.38);
-      --meeting-shadow-soft: rgba(0, 0, 0, 0.24);
-      --meeting-overlay: rgba(0, 0, 0, 0.58);
-    }
-  }
-
-  body {
-    background: var(--meeting-bg) !important;
-  }
-
-  .detail-shell {
-    min-height: calc(100vh - 72px);
-    background: var(--meeting-bg);
-    color: var(--meeting-text);
-  }
-
-  .detail-shell * {
-    box-sizing: border-box;
-  }
-
-  .detail-content {
-    width: min(100%, 1240px);
-    margin: 0 auto;
-    padding: 16px 22px 30px;
-  }
-
-  .detail-sticky-header {
-    position: sticky;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 60;
-    width: 100%;
-    background: rgba(var(--meeting-bg-rgb), 0.97);
-    backdrop-filter: blur(14px);
-    border-bottom: 1px solid var(--meeting-border);
-    box-shadow: 0 10px 24px var(--meeting-shadow-soft);
-  }
-
-  .detail-header-inner {
-    width: min(100%, 1240px);
-    margin: 0 auto;
-    padding: 12px 22px 13px;
-  }
-
-  .detail-back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    color: var(--meeting-subtext);
-    text-decoration: none;
-    font-size: 12.5px;
-    font-weight: 850;
-    margin-bottom: 10px;
-  }
-
-  .detail-back-link:hover {
-    color: #2f765d;
-  }
-
-  .detail-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 16px;
-    align-items: center;
-  }
-
-  .detail-title {
-    margin: 0;
-    color: var(--meeting-text);
-    font-size: 23px;
-    line-height: 1.1;
-    font-weight: 950;
-    letter-spacing: -0.045em;
-  }
-
-  .detail-subline {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 8px;
-  }
-
-  .detail-actions {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .detail-actions form {
-    margin: 0;
-  }
-
-  .detail-button,
-  .detail-danger-button {
-    min-height: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    border-radius: 11px;
-    padding: 0 11px;
-    font-size: 12px;
-    font-weight: 850;
-    text-decoration: none;
-    white-space: nowrap;
-    cursor: pointer;
-  }
-
-  .detail-button {
-    border: 1px solid var(--meeting-border);
-    background: var(--meeting-surface);
-    color: var(--meeting-text);
-  }
-
-  .detail-button:hover {
-    background: var(--meeting-surface-hover);
-    box-shadow: 0 8px 18px var(--meeting-shadow-soft);
-  }
-
-  .detail-button.primary {
-    border-color: #2f765d;
-    background: #2f765d;
-    color: #ffffff;
-  }
-
-  .detail-button.primary:hover {
-    background: #27634f;
-  }
-
-  .detail-button.info {
-    border-color: #bcd7c9;
-    background: #edf8f2;
-    color: #1f6e4c;
-  }
-
-  .detail-button.disabled {
-    border-color: var(--meeting-border);
-    background: var(--meeting-soft-surface);
-    color: var(--meeting-muted-text);
-    cursor: default;
-  }
-
-  .detail-button.disabled:hover {
-    background: var(--meeting-soft-surface);
-    box-shadow: none;
-  }
-
-  .detail-danger-button {
-    border: 1px solid #fecaca;
-    background: #fff1f2;
-    color: #be123c;
-  }
-
-  .detail-danger-button:hover {
-    background: #ffe4e6;
-  }
-
-
-  html.dark .detail-button.info,
-  body.dark .detail-button.info,
-  .dark .detail-button.info,
-  [data-theme="dark"] .detail-button.info {
-    border-color: #315c49;
-    background: #14261e;
-    color: #9be0bf;
-  }
-
-  html.dark .detail-danger-button,
-  body.dark .detail-danger-button,
-  .dark .detail-danger-button,
-  [data-theme="dark"] .detail-danger-button {
-    border-color: #5b2530;
-    background: #261318;
-    color: #f9a8b7;
-  }
-
-  .detail-pill,
-  .participant-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 22px;
-    border-radius: 999px;
-    padding: 0 10px;
-    font-size: 11.2px;
-    font-weight: 850;
-    line-height: 1;
-    white-space: nowrap;
-  }
-
-  .detail-pill-scheduled,
-  .participant-attended {
-    background: #e4f5ec;
-    color: #1f6e4c;
-  }
-
-  .detail-pill-completed {
-    background: var(--meeting-soft-surface);
-    color: var(--meeting-subtext);
-  }
-
-  .detail-pill-cancelled,
-  .participant-danger {
-    background: #fff1f2;
-    color: #be123c;
-  }
-
-  .detail-pill-draft,
-  .participant-invited {
-    background: #fff7df;
-    color: #a06000;
-  }
-
-  .participant-confirmed {
-    background: #eef5ff;
-    color: #275781;
-  }
-
-  .detail-type-pill {
-    background: var(--meeting-soft-surface);
-    color: var(--meeting-subtext);
-  }
-
-  .detail-description-card {
-    border: 1px solid var(--meeting-border);
-    border-radius: 15px;
-    background: var(--meeting-surface);
-    padding: 12px 15px;
-    margin-bottom: 12px;
-  }
-
-  .detail-description-label,
-  .detail-info-label {
-    margin: 0 0 5px;
-    color: var(--meeting-muted-text);
-    font-size: 10.5px;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  .detail-description-text {
-    margin: 0;
-    color: var(--meeting-text);
-    font-size: 13px;
-    font-weight: 650;
-    line-height: 1.55;
-  }
-
-  .detail-main-card {
-    border: 1px solid var(--meeting-border);
-    border-radius: 16px;
-    background: var(--meeting-surface);
-    overflow: hidden;
-    box-shadow: 0 10px 24px var(--meeting-shadow-soft);
-    width: 100%;
-  }
-
-  .detail-overview {
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr) 240px;
-    gap: 14px;
-    align-items: center;
-    padding: 13px 16px;
-    border-bottom: 1px solid var(--meeting-border);
-  }
-
-  .detail-date-box {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    background: #e6f5ee;
-    color: #2f765d;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .detail-date-month {
-    font-size: 10px;
-    line-height: 1;
-    letter-spacing: 0.08em;
-    font-weight: 850;
-    color: var(--meeting-muted-text);
-  }
-
-  .detail-date-day {
-    margin-top: 5px;
-    font-size: 24px;
-    line-height: 0.85;
-    font-weight: 950;
-    letter-spacing: -0.08em;
-  }
-
-  .detail-overview-title {
-    margin: 0 0 7px;
-    color: var(--meeting-text);
-    font-size: 15px;
-    font-weight: 950;
-    letter-spacing: -0.02em;
-  }
-
-  .detail-overview-meta {
-    display: flex;
-    align-items: center;
-    gap: 11px;
-    flex-wrap: wrap;
-    color: var(--meeting-muted-text);
-    font-size: 12.2px;
-    font-weight: 700;
-  }
-
-  .detail-stats-row {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .detail-stat-box,
-  .detail-info-box {
-    border: 1px solid var(--meeting-border);
-    border-radius: 13px;
-    background: var(--meeting-muted-surface);
-  }
-
-  .detail-stat-box {
-    padding: 10px 11px;
-  }
-
-  .detail-stat-number {
-    margin: 0;
-    color: #2f765d;
-    font-size: 17px;
-    line-height: 1;
-    font-weight: 950;
-  }
-
-  .detail-stat-label {
-    margin: 4px 0 0;
-    color: var(--meeting-muted-text);
-    font-size: 10.5px;
-    font-weight: 850;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-  }
-
-  .detail-info-grid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    padding: 13px 16px;
-  }
-
-  .detail-info-box {
-    padding: 11px 12px;
-    min-width: 0;
-  }
-
-  .detail-info-box.wide {
-    grid-column: 1 / -1;
-  }
-
-  .detail-info-value {
-    margin: 0;
-    color: var(--meeting-text);
-    font-size: 13px;
-    font-weight: 850;
-    line-height: 1.4;
-    word-break: break-word;
-  }
-
-  .detail-info-value a {
-    color: #2f765d;
-    text-decoration: none;
-  }
-
-  .detail-info-value a:hover {
-    text-decoration: underline;
-  }
-
-  .detail-section {
-    padding: 14px 16px;
-    border-top: 1px solid var(--meeting-border);
-  }
-
-  #attendance-section {
-    scroll-margin-top: 132px;
-  }
-
-  .detail-section-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 14px;
-    margin-bottom: 11px;
-  }
-
-  .detail-section-title {
-    margin: 0;
-    color: var(--meeting-text);
-    font-size: 15px;
-    font-weight: 950;
-    letter-spacing: -0.02em;
-  }
-
-  .detail-section-note {
-    margin: 3px 0 0;
-    color: var(--meeting-muted-text);
-    font-size: 12.3px;
-    font-weight: 600;
-    line-height: 1.45;
-  }
-
-  .detail-count-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 24px;
-    padding: 0 10px;
-    border-radius: 999px;
-    background: var(--meeting-soft-surface);
-    color: var(--meeting-subtext);
-    font-size: 11.5px;
-    font-weight: 850;
-    white-space: nowrap;
-  }
-
-  .min-w-0 {
-    min-width: 0;
-  }
-
-  .participant-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 9px;
-  }
-
-  .participant-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    border: 1px solid var(--meeting-border);
-    border-radius: 13px;
-    background: var(--meeting-surface-hover);
-    padding: 10px 12px;
-    min-width: 0;
-  }
-
-  .participant-left {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    min-width: 0;
-  }
-
-  .participant-avatar {
-    width: 31px;
-    height: 31px;
-    border-radius: 999px;
-    background: #e6f5ee;
-    color: #2f765d;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
-    font-weight: 900;
-    flex-shrink: 0;
-  }
-
-  .participant-avatar.external {
-    background: var(--meeting-soft-surface);
-    color: var(--meeting-subtext);
-  }
-
-  .participant-name {
-    margin: 0;
-    color: var(--meeting-text);
-    font-size: 13px;
-    font-weight: 850;
-    line-height: 1.25;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .participant-meta {
-    margin: 2px 0 0;
-    color: var(--meeting-muted-text);
-    font-size: 11.3px;
-    font-weight: 600;
-    line-height: 1.35;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .attendance-control,
-  .attendance-save-row {
-    display: none;
-  }
-
-  .attendance-editing .participant-pill {
-    display: none;
-  }
-
-  .attendance-editing .attendance-control,
-  .attendance-editing .attendance-save-row {
-    display: flex;
-  }
-
-  .attendance-select {
-    min-height: 31px;
-    border-radius: 10px;
-    border: 1px solid var(--meeting-border);
-    background: var(--meeting-surface);
-    color: var(--meeting-text);
-    font-size: 12px;
-    font-weight: 750;
-    padding: 0 9px;
-    outline: none;
-  }
-
-  .attendance-select:focus {
-    border-color: #2f765d;
-    box-shadow: 0 0 0 3px rgba(47, 118, 93, 0.12);
-  }
-
-  .attendance-save-row {
-    margin-top: 12px;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .minute-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 9px;
-  }
-
-  .minute-card {
-    border: 1px solid var(--meeting-border);
-    border-radius: 13px;
-    background: var(--meeting-surface-hover);
-    padding: 10px 12px;
-  }
-
-  .minute-title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 5px;
-  }
-
-  .minute-title {
-    margin: 0;
-    color: var(--meeting-text);
-    font-size: 13px;
-    font-weight: 900;
-  }
-
-  .minute-link {
-    color: #2f765d;
-    font-size: 11.5px;
-    font-weight: 850;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .minute-link:hover {
-    text-decoration: underline;
-  }
-
-  .minute-summary {
-    margin: 0;
-    color: var(--meeting-subtext);
-    font-size: 12.2px;
-    font-weight: 600;
-    line-height: 1.45;
-  }
-
-  .detail-empty {
-    border: 1px dashed var(--meeting-border-strong);
-    border-radius: 13px;
-    background: var(--meeting-surface);
-    padding: 18px 16px;
-    text-align: center;
-  }
-
-  .detail-empty p {
-    margin: 0;
-    color: var(--meeting-subtext);
-    font-size: 12.5px;
-    font-weight: 750;
-    line-height: 1.5;
-  }
-
-  @media (max-width: 1000px) {
-    .detail-overview {
-      grid-template-columns: 68px minmax(0, 1fr);
-    }
-
-    .detail-stats-row {
-      grid-column: 1 / -1;
-    }
-  }
-
-  @media (max-width: 860px) {
-    .detail-hero {
-      grid-template-columns: 1fr;
-    }
-
-    .detail-actions {
-      justify-content: flex-start;
-    }
-
-    .detail-info-grid,
-    .participant-grid,
-    .minute-grid {
-      grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 560px) {
-    .detail-content,
-    .detail-header-inner {
-      padding-left: 14px;
-      padding-right: 14px;
-    }
-
-    .detail-title {
-      font-size: 21px;
-    }
-
-    .detail-actions,
-    .detail-button,
-    .detail-danger-button {
-      width: 100%;
-    }
-
-    .detail-overview,
-    .detail-info-grid,
-    .detail-section {
-      padding-left: 14px;
-      padding-right: 14px;
-    }
-
-    .detail-stats-row {
-      grid-template-columns: 1fr;
-    }
-
-    .detail-section-header {
-      flex-direction: column;
-      gap: 8px;
-    }
-  }
-
-
-  input,
-  textarea,
-  select {
-    color: var(--meeting-text);
-    background-color: var(--meeting-surface-hover);
-    border-color: var(--meeting-border);
-  }
-
-  input::placeholder,
-  textarea::placeholder {
-    color: var(--meeting-muted-text);
-  }
-
-  select option {
-    background: var(--meeting-surface);
-    color: var(--meeting-text);
-  }
-
-
-  html.dark .detail-description-card,
-  html.dark .detail-main-card,
-  body.dark .detail-description-card,
-  body.dark .detail-main-card,
-  [data-theme="dark"] .detail-description-card,
-  [data-theme="dark"] .detail-main-card,
-  .dark .detail-description-card,
-  .dark .detail-main-card {
-    background: #28231c;
-    border-color: #4a4136;
-  }
-
-  html.dark .detail-info-box,
-  html.dark .detail-stat-box,
-  body.dark .detail-info-box,
-  body.dark .detail-stat-box,
-  [data-theme="dark"] .detail-info-box,
-  [data-theme="dark"] .detail-stat-box,
-  .dark .detail-info-box,
-  .dark .detail-stat-box {
-    background: #332d24;
-    border-color: #4a4136;
-  }
-
-  html.dark .participant-card,
-  html.dark .minute-card,
-  body.dark .participant-card,
-  body.dark .minute-card,
-  [data-theme="dark"] .participant-card,
-  [data-theme="dark"] .minute-card,
-  .dark .participant-card,
-  .dark .minute-card {
-    background: #302a22;
-    border-color: #4a4136;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) .detail-description-card,
-    :root:not([data-theme="light"]) .detail-main-card {
-      background: #28231c;
-      border-color: #4a4136;
-    }
-
-    :root:not([data-theme="light"]) .detail-info-box,
-    :root:not([data-theme="light"]) .detail-stat-box {
-      background: #332d24;
-      border-color: #4a4136;
-    }
-
-    :root:not([data-theme="light"]) .participant-card,
-    :root:not([data-theme="light"]) .minute-card {
-      background: #302a22;
-      border-color: #4a4136;
-    }
-  }
-
+/* ── Meeting Detail Page — CSS variables tema ── */
+
+.detail-shell {
+  min-height: calc(100vh - 72px);
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.detail-shell * { box-sizing: border-box; }
+
+.detail-content {
+  width: min(100%, 1240px);
+  margin: 0 auto;
+  padding: 16px 22px 30px;
+}
+
+/* ── Sticky header ── */
+.detail-sticky-header {
+  position: sticky; top: 0; left: 0; right: 0; z-index: 60; width: 100%;
+  background: color-mix(in srgb, var(--background) 97%, transparent);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--foreground) 5%, transparent);
+}
+
+.detail-header-inner {
+  width: min(100%, 1240px);
+  margin: 0 auto;
+  padding: 12px 22px 13px;
+}
+
+.detail-back-link {
+  display: inline-flex; align-items: center; gap: 7px;
+  color: var(--muted-foreground); text-decoration: none;
+  font-size: 12.5px; font-weight: 850; margin-bottom: 10px;
+  transition: color 0.15s;
+}
+.detail-back-link:hover { color: #10b981; }
+
+.detail-hero {
+  display: grid; grid-template-columns: minmax(0,1fr) auto;
+  gap: 16px; align-items: center;
+}
+
+.detail-title {
+  margin: 0; color: var(--foreground);
+  font-size: 23px; line-height: 1.1; font-weight: 950; letter-spacing: -0.045em;
+}
+
+.detail-subline {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px;
+}
+
+.detail-actions {
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.detail-actions form { margin: 0; }
+
+/* ── Buttons ── */
+.detail-button, .detail-danger-button {
+  min-height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  gap: 7px; border-radius: 11px; padding: 0 11px;
+  font-size: 12px; font-weight: 850; text-decoration: none;
+  white-space: nowrap; cursor: pointer; font-family: inherit; border: none;
+  transition: all 0.15s;
+}
+
+.detail-button {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--card-foreground);
+}
+.detail-button:hover {
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--foreground) 6%, transparent);
+}
+
+.detail-button.primary {
+  border-color: #059669; background: #059669; color: #fff;
+  box-shadow: 0 4px 12px color-mix(in srgb, #059669 25%, transparent);
+}
+.detail-button.primary:hover { background: #047857; border-color: #047857; }
+
+.detail-button.info {
+  border-color: color-mix(in srgb, #10b981 35%, transparent);
+  background: color-mix(in srgb, #10b981 10%, transparent);
+  color: #059669;
+}
+.dark .detail-button.info { color: #34d399; }
+.detail-button.info:hover { background: color-mix(in srgb, #10b981 18%, transparent); }
+
+.detail-button.disabled {
+  border-color: var(--border);
+  background: color-mix(in srgb, var(--muted) 40%, transparent);
+  color: var(--muted-foreground); cursor: default;
+}
+.detail-button.disabled:hover { box-shadow: none; }
+
+.detail-danger-button {
+  border: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
+  background: color-mix(in srgb, #ef4444 10%, transparent);
+  color: #dc2626;
+}
+.dark .detail-danger-button { color: #f87171; }
+.detail-danger-button:hover { background: color-mix(in srgb, #ef4444 18%, transparent); }
+
+/* ── Pills ── */
+.detail-pill, .participant-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 22px; border-radius: 999px; padding: 0 10px;
+  font-size: 11.2px; font-weight: 850; line-height: 1; white-space: nowrap;
+}
+
+.detail-pill-scheduled, .participant-attended {
+  background: color-mix(in srgb, #10b981 15%, transparent); color: #059669;
+}
+.dark .detail-pill-scheduled, .dark .participant-attended { color: #34d399; }
+
+.detail-pill-completed {
+  background: color-mix(in srgb, var(--muted) 60%, transparent);
+  color: var(--muted-foreground);
+}
+
+.detail-pill-cancelled, .participant-danger {
+  background: color-mix(in srgb, #ef4444 14%, transparent); color: #dc2626;
+}
+.dark .detail-pill-cancelled, .dark .participant-danger { color: #f87171; }
+
+.detail-pill-draft, .participant-invited {
+  background: color-mix(in srgb, #f59e0b 14%, transparent); color: #d97706;
+}
+.dark .detail-pill-draft, .dark .participant-invited { color: #fbbf24; }
+
+.participant-confirmed {
+  background: color-mix(in srgb, #3b82f6 12%, transparent); color: #2563eb;
+}
+.dark .participant-confirmed { color: #60a5fa; }
+
+.detail-type-pill {
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+  color: var(--muted-foreground);
+}
+
+/* ── Description card ── */
+.detail-description-card {
+  border: 1px solid var(--border); border-radius: 15px;
+  background: var(--card); padding: 12px 15px; margin-bottom: 12px;
+}
+
+.detail-description-label, .detail-info-label {
+  margin: 0 0 5px; color: var(--muted-foreground);
+  font-size: 10.5px; font-weight: 900; letter-spacing: 0.04em; text-transform: uppercase;
+}
+
+.detail-description-text {
+  margin: 0; color: var(--card-foreground);
+  font-size: 13px; font-weight: 650; line-height: 1.55;
+}
+
+/* ── Main card ── */
+.detail-main-card {
+  border: 1px solid var(--border); border-radius: 16px;
+  background: var(--card); overflow: hidden;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--foreground) 5%, transparent);
+  width: 100%;
+}
+
+/* Overview row */
+.detail-overview {
+  display: grid; grid-template-columns: 64px minmax(0,1fr) 240px;
+  gap: 14px; align-items: center;
+  padding: 13px 16px; border-bottom: 1px solid var(--border);
+}
+
+.detail-date-box {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: color-mix(in srgb, #10b981 12%, transparent);
+  color: #059669;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.dark .detail-date-box { color: #34d399; }
+
+.detail-date-month {
+  font-size: 10px; line-height: 1; letter-spacing: 0.08em;
+  font-weight: 850; color: var(--muted-foreground);
+}
+.detail-date-day {
+  margin-top: 5px; font-size: 24px; line-height: 0.85;
+  font-weight: 950; letter-spacing: -0.08em;
+}
+
+.detail-overview-title {
+  margin: 0 0 7px; color: var(--card-foreground);
+  font-size: 15px; font-weight: 950; letter-spacing: -0.02em;
+}
+.detail-overview-meta {
+  display: flex; align-items: center; gap: 11px; flex-wrap: wrap;
+  color: var(--muted-foreground); font-size: 12.2px; font-weight: 700;
+}
+
+/* Stats row */
+.detail-stats-row {
+  display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px;
+}
+
+.detail-stat-box, .detail-info-box {
+  border: 1px solid var(--border); border-radius: 13px;
+  background: color-mix(in srgb, var(--muted) 30%, transparent);
+}
+
+.detail-stat-box { padding: 10px 11px; }
+
+.detail-stat-number {
+  margin: 0; color: #059669; font-size: 17px; line-height: 1; font-weight: 950;
+}
+.dark .detail-stat-number { color: #34d399; }
+
+.detail-stat-label {
+  margin: 4px 0 0; color: var(--muted-foreground);
+  font-size: 10.5px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.03em;
+}
+
+/* Info grid */
+.detail-info-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 10px; padding: 13px 16px;
+}
+
+.detail-info-box { padding: 11px 12px; min-width: 0; }
+.detail-info-box.wide { grid-column: 1 / -1; }
+
+.detail-info-value {
+  margin: 0; color: var(--card-foreground);
+  font-size: 13px; font-weight: 850; line-height: 1.4; word-break: break-word;
+}
+.detail-info-value a { color: #10b981; text-decoration: none; }
+.detail-info-value a:hover { text-decoration: underline; }
+
+/* ── Sections ── */
+.detail-section {
+  padding: 14px 16px; border-top: 1px solid var(--border);
+}
+
+#attendance-section { scroll-margin-top: 132px; }
+
+.detail-section-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 14px; margin-bottom: 11px;
+}
+
+.detail-section-title {
+  margin: 0; color: var(--card-foreground);
+  font-size: 15px; font-weight: 950; letter-spacing: -0.02em;
+}
+.detail-section-note {
+  margin: 3px 0 0; color: var(--muted-foreground);
+  font-size: 12.3px; font-weight: 600; line-height: 1.45;
+}
+
+.detail-count-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-height: 24px; padding: 0 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+  color: var(--muted-foreground); font-size: 11.5px; font-weight: 850; white-space: nowrap;
+}
+
+.min-w-0 { min-width: 0; }
+
+/* ── Participants ── */
+.participant-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 9px; }
+
+.participant-card {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; border: 1px solid var(--border); border-radius: 13px;
+  background: color-mix(in srgb, var(--card) 95%, var(--foreground));
+  padding: 10px 12px; min-width: 0;
+}
+
+.participant-left { display: flex; align-items: center; gap: 9px; min-width: 0; }
+
+.participant-avatar {
+  width: 31px; height: 31px; border-radius: 999px;
+  background: color-mix(in srgb, #10b981 12%, transparent);
+  color: #059669;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; flex-shrink: 0;
+}
+.dark .participant-avatar { color: #34d399; }
+
+.participant-avatar.external {
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+  color: var(--muted-foreground);
+}
+
+.participant-name {
+  margin: 0; color: var(--card-foreground);
+  font-size: 13px; font-weight: 850; line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.participant-meta {
+  margin: 2px 0 0; color: var(--muted-foreground);
+  font-size: 11.3px; font-weight: 600; line-height: 1.35;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+/* ── Attendance edit ── */
+.attendance-control, .attendance-save-row { display: none; }
+.attendance-editing .participant-pill { display: none; }
+.attendance-editing .attendance-control,
+.attendance-editing .attendance-save-row { display: flex; }
+
+.attendance-select {
+  min-height: 31px; border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--card); color: var(--foreground);
+  font-size: 12px; font-weight: 750; padding: 0 9px; outline: none; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.attendance-select:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #10b981 18%, transparent);
+}
+
+.attendance-save-row {
+  margin-top: 12px; justify-content: flex-end; align-items: center; gap: 8px;
+}
+
+/* ── Minutes ── */
+.minute-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; }
+
+.minute-card {
+  border: 1px solid var(--border); border-radius: 13px;
+  background: color-mix(in srgb, var(--card) 95%, var(--foreground));
+  padding: 10px 12px;
+}
+
+.minute-title-row {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 5px;
+}
+.minute-title { margin: 0; color: var(--card-foreground); font-size: 13px; font-weight: 900; }
+.minute-link {
+  color: #10b981; font-size: 11.5px; font-weight: 850; text-decoration: none; white-space: nowrap;
+}
+.minute-link:hover { text-decoration: underline; }
+.minute-summary {
+  margin: 0; color: var(--muted-foreground);
+  font-size: 12.2px; font-weight: 600; line-height: 1.45;
+}
+
+/* ── Empty state ── */
+.detail-empty {
+  border: 1.5px dashed color-mix(in srgb, var(--border) 80%, var(--foreground));
+  border-radius: 13px; background: var(--card); padding: 18px 16px; text-align: center;
+}
+.detail-empty p {
+  margin: 0; color: var(--muted-foreground); font-size: 12.5px; font-weight: 750; line-height: 1.5;
+}
+
+/* ── Form inputs ── */
+input, textarea, select {
+  color: var(--foreground);
+  background-color: var(--card);
+  border-color: var(--border);
+}
+input::placeholder, textarea::placeholder { color: var(--muted-foreground); }
+
+/* ── Responsive ── */
+@media (max-width: 1000px) {
+  .detail-overview { grid-template-columns: 68px minmax(0,1fr); }
+  .detail-stats-row { grid-column: 1 / -1; }
+}
+
+@media (max-width: 860px) {
+  .detail-hero { grid-template-columns: 1fr; }
+  .detail-actions { justify-content: flex-start; }
+  .detail-info-grid, .participant-grid, .minute-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 560px) {
+  .detail-content, .detail-header-inner { padding-left: 14px; padding-right: 14px; }
+  .detail-title { font-size: 21px; }
+  .detail-actions, .detail-button, .detail-danger-button { width: 100%; }
+  .detail-overview, .detail-info-grid, .detail-section { padding-left: 14px; padding-right: 14px; }
+  .detail-stats-row { grid-template-columns: 1fr; }
+  .detail-section-header { flex-direction: column; gap: 8px; }
+}
 </style>
 
 <div class="detail-shell">
@@ -1057,7 +653,6 @@
               <h2 class="detail-section-title">Notulen & Dokumentasi</h2>
               <p class="detail-section-note">Notulen hanya ditampilkan setelah rapat berstatus completed.</p>
             </div>
-
             <span class="detail-count-pill"><%= minuteList.length %> file</span>
           </div>
 
@@ -1095,7 +690,6 @@
               <h2 class="detail-section-title">Daftar Kehadiran Peserta</h2>
               <p class="detail-section-note">Klik Edit Kehadiran untuk mengubah status hadir atau tidak hadir.</p>
             </div>
-
             <span class="detail-count-pill"><%= totalParticipantCount %> peserta</span>
           </div>
 
@@ -1115,7 +709,6 @@
                     <div class="participant-avatar">
                       <%= participant.name ? participant.name.substring(0, 1).toUpperCase() : '?' %>
                     </div>
-
                     <div class="min-w-0">
                       <p class="participant-name"><%= participant.name %></p>
                       <p class="participant-meta"><%= participant.employee_number || 'Tidak ada nomor pegawai' %></p>
@@ -1160,7 +753,6 @@
                     <div class="participant-avatar external">
                       <%= participant.name ? participant.name.substring(0, 1).toUpperCase() : '?' %>
                     </div>
-
                     <div class="min-w-0">
                       <p class="participant-name"><%= participant.name %></p>
                       <p class="participant-meta">
@@ -1210,22 +802,14 @@
 <script>
   function enableAttendanceEdit() {
     const section = document.getElementById('attendance-section');
-
-    if (!section) {
-      return;
-    }
-
+    if (!section) return;
     section.classList.add('attendance-editing');
     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function cancelAttendanceEdit() {
     const section = document.getElementById('attendance-section');
-
-    if (!section) {
-      return;
-    }
-
+    if (!section) return;
     section.classList.remove('attendance-editing');
   }
 </script>

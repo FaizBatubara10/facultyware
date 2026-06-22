@@ -381,7 +381,7 @@
 
   <!-- ── Page Header ── -->
   <div class="um-header">
-    <h1>Upload Notulensi</h1>
+    <h1>Upload Notulensi dan Dokumentasi</h1>
     <p>Unggah, kelola, dan pantau dokumentasi hasil rapat secara terpusat dengan mudah.</p>
   </div>
 
@@ -660,7 +660,7 @@
 
       <form id="replaceForm" method="POST" enctype="multipart/form-data">
         <div class="um-field" style="margin-bottom:1.25rem">
-          <label class="um-label">Upload File Baru <span class="req">*</span></label>
+          <label class="um-label">Upload File Baru <span class="opt">(opsional)</span></label>
 
           <div id="replaceDropZone" class="um-dropzone amber-zone" style="margin-top:0.5rem">
             <div id="replaceDropContent">
@@ -691,15 +691,37 @@
               </button>
             </div>
 
-            <input type="file" id="replaceFileInput" name="file_notulensi" required
+            <input type="file" id="replaceFileInput" name="file_notulensi"
               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
               class="um-file-input" />
           </div>
         </div>
 
+        <div class="um-field" style="margin-bottom:1.25rem">
+          <label class="um-label">Tambah Foto Dokumentasi <span class="opt">(opsional)</span></label>
+
+          <div id="replaceDocZone" class="um-dropzone violet-zone" style="margin-top:0.5rem">
+            <div id="replaceDocContent">
+              <div class="um-drop-icon-wrap">
+                <svg class="um-drop-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <div>
+                <p class="um-drop-label"><span class="um-drop-link">Klik untuk pilih</span> atau seret foto</p>
+                <p class="um-drop-hint">JPG, PNG &bull; Maks 10MB per file &bull; Bisa pilih banyak</p>
+              </div>
+            </div>
+            <div id="replaceDocList" class="doc-file-list"></div>
+            <input type="file" id="replaceDocInput" name="file_dokumentasi" multiple
+              accept=".jpg,.jpeg,.png" class="um-file-input" />
+          </div>
+        </div>
+
         <div class="um-modal-footer">
           <button type="button" onclick="closeReplaceModal()" class="um-btn-cancel">Batal</button>
-          <button type="submit" class="um-btn-amber">Ganti File</button>
+          <button type="submit" class="um-btn-amber">Simpan Perubahan</button>
         </div>
       </form>
     </div>
@@ -865,7 +887,69 @@
     modal.classList.remove('visible');
     box.classList.remove('visible');
     setTimeout(() => modal.classList.remove('open'), 200);
+    replaceDocFiles = [];
+    renderReplaceDocList();
   }
+
+  // ── Multiple foto dokumentasi di modal replace ──────────────────────
+  let replaceDocFiles = [];
+
+  const replaceDocInput = document.getElementById('replaceDocInput');
+  const replaceDocList  = document.getElementById('replaceDocList');
+  const replaceDocZone  = document.getElementById('replaceDocZone');
+
+  function renderReplaceDocList() {
+    replaceDocList.innerHTML = '';
+    if (replaceDocFiles.length === 0) { replaceDocList.classList.remove('show'); return; }
+    replaceDocList.classList.add('show');
+    replaceDocFiles.forEach((file, idx) => {
+      const ext = getExt(file.name);
+      const item = document.createElement('div');
+      item.className = 'doc-file-item';
+      item.innerHTML = `
+        <div class="doc-file-item-info">
+          <div class="doc-file-thumb">${ext.toUpperCase()}</div>
+          <div style="overflow:hidden">
+            <p class="doc-file-name">${file.name}</p>
+            <p class="doc-file-size">${formatBytes(file.size)}</p>
+          </div>
+        </div>
+        <button type="button" class="doc-remove-btn" data-idx="${idx}">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>`;
+      replaceDocList.appendChild(item);
+    });
+    replaceDocList.querySelectorAll('.doc-remove-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        replaceDocFiles.splice(parseInt(btn.dataset.idx, 10), 1);
+        syncReplaceDocInput();
+        renderReplaceDocList();
+      });
+    });
+  }
+
+  function syncReplaceDocInput() {
+    const dt = new DataTransfer();
+    replaceDocFiles.forEach(f => dt.items.add(f));
+    replaceDocInput.files = dt.files;
+  }
+
+  function addReplaceDocFiles(newFiles) {
+    Array.from(newFiles).forEach(f => replaceDocFiles.push(f));
+    syncReplaceDocInput();
+    renderReplaceDocList();
+  }
+
+  replaceDocInput.addEventListener('change', () => addReplaceDocFiles(replaceDocInput.files));
+  replaceDocZone.addEventListener('dragover', (e) => { e.preventDefault(); replaceDocZone.classList.add('drag-over'); });
+  replaceDocZone.addEventListener('dragleave', () => replaceDocZone.classList.remove('drag-over'));
+  replaceDocZone.addEventListener('drop', (e) => {
+    e.preventDefault(); replaceDocZone.classList.remove('drag-over');
+    addReplaceDocFiles(e.dataTransfer.files);
+  });
 
   document.getElementById('replaceModal').addEventListener('click', function(e) {
     if (e.target === this) closeReplaceModal();

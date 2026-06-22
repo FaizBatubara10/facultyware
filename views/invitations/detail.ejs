@@ -260,38 +260,52 @@
       </div>
 
       <!-- Tombol aksi -->
-      <div class="fwd-card-section">
-        <% if (undangan.status === 'invited') { %>
-          <p class="fwd-action-hint">Konfirmasi kehadiran Anda untuk rapat ini:</p>
-          <div class="fwd-action-row">
-            <form action="/invitations/<%= undangan.participant_id %>/status" method="POST">
-              <input type="hidden" name="status" value="confirmed">
-              <button type="submit" class="fwd-btn fwd-btn-accept">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Terima Undangan
-              </button>
-            </form>
-            <form action="/invitations/<%= undangan.participant_id %>/status" method="POST">
-              <input type="hidden" name="status" value="declined">
-              <button type="submit" class="fwd-btn fwd-btn-decline">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Tolak Undangan
-              </button>
-            </form>
-          </div>
-        <% } else { %>
-          <div class="fwd-status-note">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Status undangan ini sudah diperbarui dan tidak dapat diubah lagi dari halaman ini.
-          </div>
-        <% } %>
-      </div>
+<div class="fwd-card-section">
+  <% 
+    const meetingDateTime = new Date(undangan.meeting_date);
+    const isPast = meetingDateTime < new Date();
+  %>
+
+  <% if (isPast && undangan.status === 'invited') { %>
+    <div class="fwd-alert fwd-alert-no" style="margin-bottom:0;">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <span>Rapat ini telah berlangsung. Waktu untuk merespons undangan telah berakhir.</span>
+    </div>
+
+  <% } else if (undangan.status === 'invited') { %>
+    <p class="fwd-action-hint">Konfirmasi kehadiran Anda untuk rapat ini:</p>
+    <div class="fwd-action-row">
+      <form action="/invitations/<%= undangan.participant_id %>/status" method="POST">
+        <input type="hidden" name="status" value="confirmed">
+        <button type="submit" class="fwd-btn fwd-btn-accept">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Terima Undangan
+        </button>
+      </form>
+      <form action="/invitations/<%= undangan.participant_id %>/status" method="POST">
+        <input type="hidden" name="status" value="declined">
+        <button type="submit" class="fwd-btn fwd-btn-decline">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Tolak Undangan
+        </button>
+      </form>
+    </div>
+
+  <% } else { %>
+    <div class="fwd-status-note">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Status undangan ini sudah diperbarui dan tidak dapat diubah lagi dari halaman ini.
+    </div>
+  <% } %>
+</div>
 
     </div>
   </div>

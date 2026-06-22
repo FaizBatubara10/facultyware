@@ -22,7 +22,10 @@ router.post('/upload-minutes', isAuthenticated, upload.fields([{ name: 'file_not
 router.post('/minutes/:id/delete', isAuthenticated, minuteController.deleteMinute);
 
 // Ganti file notulensi
-router.post('/minutes/:id/replace', isAuthenticated, upload.single('file_notulensi'), minuteController.replaceMinute);
+router.post('/minutes/:id/replace', isAuthenticated, upload.fields([
+  { name: 'file_notulensi', maxCount: 1 },
+  { name: 'file_dokumentasi', maxCount: 10 }
+]), minuteController.replaceMinute);
 
 // Export notulensi sebagai PDF
 router.get('/minutes/:id/export-pdf', isAuthenticated, minuteController.exportMinutePdf);
