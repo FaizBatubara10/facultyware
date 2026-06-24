@@ -2,7 +2,10 @@ const bcrypt = require("bcryptjs");
 const db = require("../lib/db");
 
 const index = (req, res) => {
-  res.render("index", { title: "Express" });
+  if (req.session.userId) {
+    return res.redirect("/home");
+  }
+  return res.redirect("/login");
 };
 
 const home = async (req, res, next) => {
