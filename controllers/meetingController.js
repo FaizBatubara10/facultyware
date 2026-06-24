@@ -476,9 +476,7 @@ const show = async (req, res, next) => {
       && Number(meeting.has_started) === 1
       && meeting.status === 'completed';
 
-    const canExportAttendance = isHost
-      && meeting.status === 'completed'
-      && isAttendanceExportReady(participants, externalParticipants);
+    const canExportAttendance = isHost;
 
     const exportAttendanceMessage = canExportAttendance
       ? null
@@ -793,9 +791,6 @@ const exportAttendanceExcel = async (req, res, next) => {
     if (meetingRows.length === 0) return res.status(404).send('Meeting tidak ditemukan.');
 
     const meeting = meetingRows[0];
-    if (meeting.status !== 'completed') {
-      return res.redirect(`/meetings/${meetingId}?access_error=export_unavailable`);
-    }
 
     const [internalParticipants] = await db.query(
       `SELECT e.name, e.employee_number, mp.status
@@ -908,7 +903,8 @@ const exportAttendanceExcel = async (req, res, next) => {
     worksheet.getCell(`A${exportedAtRow}`).value = `Diexport pada: ${new Date().toLocaleString('id-ID')}`;
     worksheet.getCell(`A${exportedAtRow}`).font = { italic: true, color: { argb: 'FF6B7280' } };
 
-    const fileName = `daftar_hadir_${safeFileName(meeting.title)}.xlsx`;
+    const dateStr = meeting.meeting_date instanceof Date ? meeting.meeting_date.toISOString() : meeting.meeting_date;
+    const fileName = `Daftar_Hadir_${meeting.title.replace(/\s+/g, '_')}_${dateStr.split('T')[0]}.xlsx`;
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
     await workbook.xlsx.write(res);

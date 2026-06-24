@@ -1,18 +1,18 @@
-<%- include('../partials/header') %>
+<%- include('./partials/header') %>
 
 <%
-  const filterData = typeof filters !== 'undefined' && filters ? filters : { q: '', status: 'all', month: 'all' };
-  const paginationData = typeof pagination !== 'undefined' && pagination
+  let filterData = typeof filters !== 'undefined' && filters ? filters : { q: '', status: 'all', month: 'all' };
+  let paginationData = typeof pagination !== 'undefined' && pagination
     ? pagination
     : { page: 1, totalPages: 1, totalItems: 0, limit: 5 };
 
   function getDateObject(dateValue) {
-    const date = new Date(dateValue);
+    let date = new Date(dateValue);
     return isNaN(date.getTime()) ? null : date;
   }
 
   function getMonthName(dateValue) {
-    const date = getDateObject(dateValue);
+    let date = getDateObject(dateValue);
 
     if (!date) {
       return '-';
@@ -24,7 +24,7 @@
   }
 
   function getDayNumber(dateValue) {
-    const date = getDateObject(dateValue);
+    let date = getDateObject(dateValue);
 
     if (!date) {
       return '-';
@@ -66,8 +66,8 @@
   }
 
   function getStatusBadge(meeting) {
-    const status = meeting.status;
-    const date = getDateObject(meeting.meeting_date);
+    let status = meeting.status;
+    let date = getDateObject(meeting.meeting_date);
 
     if (status === 'completed') {
       return { label: 'Selesai', className: 'meeting-badge meeting-badge-success' };
@@ -85,10 +85,10 @@
       return { label: 'Scheduled', className: 'meeting-badge meeting-badge-success' };
     }
 
-    const today = new Date();
-    const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const meetingOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const diffDays = Math.ceil((meetingOnly - todayOnly) / (1000 * 60 * 60 * 24));
+    let today = new Date();
+    let todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    let meetingOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    let diffDays = Math.ceil((meetingOnly - todayOnly) / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) {
       return { label: 'Hari Ini', className: 'meeting-badge meeting-badge-success' };
@@ -134,7 +134,7 @@
   }
 
   function buildPageUrl(pageNumber) {
-    const params = [];
+    let params = [];
 
     if (filterData.q) {
       params.push('q=' + encodeURIComponent(filterData.q));
@@ -796,7 +796,7 @@
     <div class="meeting-list">
       <% if (meetings && meetings.length > 0) { %>
         <% meetings.forEach(function(meeting) { %>
-          <% const statusBadge = getStatusBadge(meeting); %>
+          <% let statusBadge = getStatusBadge(meeting); %>
 
           <div class="meeting-card">
             <a href="/meetings/<%= meeting.id %>" class="meeting-main-link" aria-label="Buka detail <%= meeting.title %>">
@@ -890,4 +890,4 @@
   </div>
 </div>
 
-<%- include('../partials/footer') %>
+<%- include('./partials/footer') %>
