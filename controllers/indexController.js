@@ -9,6 +9,19 @@ const home = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
 
+    // Sinkronisasi status meeting sebelum data dashboard ditampilkan
+    await db.query(`
+      UPDATE meetings
+      SET status = CASE
+            WHEN status = 'scheduled' THEN 'completed'
+            WHEN status = 'draft' THEN 'cancelled'
+            ELSE status
+          END,
+          updated_at = NOW()
+      WHERE status IN ('scheduled', 'draft')
+        AND TIMESTAMP(meeting_date, start_time) <= NOW()
+    `);
+
     // 1. Total meeting bulan ini
     const [hasilTotal] = await db.query(`
       SELECT COUNT(*) AS total 
@@ -18,12 +31,13 @@ const home = async (req, res, next) => {
     `);
     const totalMeetingBulanIni = hasilTotal[0].total;
 
-    // 2. Meeting mendatang — hanya yang dia host atau dia diundang (maks 3)
+    // 2. Meeting mendatang — hanya meeting berstatus scheduled yang dia host atau dia diundang (maks 3)
     const [meetingMendatang] = await db.query(
-      `SELECT DISTINCT m.title, m.meeting_date, m.start_time, m.end_time, m.meeting_type
+      `SELECT DISTINCT m.id, m.title, m.meeting_date, m.start_time, m.end_time, m.meeting_type, m.status
        FROM meetings m
        LEFT JOIN meeting_participants mp ON mp.meeting_id = m.id AND mp.employee_id = ?
-       WHERE m.meeting_date >= CURRENT_DATE()
+       WHERE m.status = 'scheduled'
+         AND TIMESTAMP(m.meeting_date, m.start_time) > NOW()
          AND (m.organizer_id = ? OR mp.employee_id IS NOT NULL)
        ORDER BY m.meeting_date ASC, m.start_time ASC
        LIMIT 3`,

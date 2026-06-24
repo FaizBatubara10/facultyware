@@ -683,6 +683,7 @@ input::placeholder, textarea::placeholder { color: var(--muted-foreground); }
         </div>
       <% } %>
 
+      <% if (typeof isHost !== 'undefined' && isHost) { %>
       <form id="attendance-form" action="/meetings/<%= meeting.id %>/attendance" method="POST">
         <div id="attendance-section" class="detail-section">
           <div class="detail-section-header">
@@ -794,6 +795,8 @@ input::placeholder, textarea::placeholder { color: var(--muted-foreground); }
           <% } %>
         </div>
       </form>
+
+      <% } %>
     </div>
 
   </div>

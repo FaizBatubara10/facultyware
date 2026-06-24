@@ -13,116 +13,99 @@
 
   function getMonthName(dateValue) {
     const date = getDateObject(dateValue);
-
-    if (!date) {
-      return '-';
-    }
-
-    return date.toLocaleDateString('id-ID', {
-      month: 'short'
-    }).toUpperCase();
+    if (!date) return '-';
+    return date.toLocaleDateString('id-ID', { month: 'short' }).toUpperCase();
   }
 
   function getDayNumber(dateValue) {
     const date = getDateObject(dateValue);
-
-    if (!date) {
-      return '-';
-    }
-
+    if (!date) return '-';
     return String(date.getDate()).padStart(2, '0');
   }
 
   function formatTime(timeValue) {
-    if (!timeValue) {
-      return '-';
-    }
-
+    if (!timeValue) return '-';
     return String(timeValue).substring(0, 5);
   }
 
   function getMeetingTypeLabel(type) {
-    if (type === 'online') {
-      return 'Online';
-    }
-
-    if (type === 'hybrid') {
-      return 'Hybrid';
-    }
-
+    if (type === 'online') return 'Online';
+    if (type === 'hybrid') return 'Hybrid';
     return 'Ruang Meeting';
   }
 
   function getMeetingTypeIcon(type) {
-    if (type === 'online') {
-      return '🌐';
-    }
-
-    if (type === 'hybrid') {
-      return '🔀';
-    }
-
+    if (type === 'online') return '🌐';
+    if (type === 'hybrid') return '🔀';
     return '📍';
   }
 
   function getStatusLabel(status) {
-    if (status === 'scheduled') {
-      return 'Scheduled';
-    }
-
-    if (status === 'completed') {
-      return 'Completed';
-    }
-
-    if (status === 'cancelled') {
-      return 'Cancelled';
-    }
-
+    if (status === 'scheduled') return 'Scheduled';
+    if (status === 'completed') return 'Completed';
+    if (status === 'cancelled') return 'Cancelled';
     return 'Draft';
   }
 
   function getStatusPillClass(status) {
-    if (status === 'scheduled') {
-      return 'meeting-status-pill meeting-status-scheduled';
-    }
-
-    if (status === 'completed') {
-      return 'meeting-status-pill meeting-status-completed';
-    }
-
-    if (status === 'cancelled') {
-      return 'meeting-status-pill meeting-status-cancelled';
-    }
-
+    if (status === 'scheduled') return 'meeting-status-pill meeting-status-scheduled';
+    if (status === 'completed') return 'meeting-status-pill meeting-status-completed';
+    if (status === 'cancelled') return 'meeting-status-pill meeting-status-cancelled';
     return 'meeting-status-pill meeting-status-draft';
+  }
+
+  function getDateBoxClass(status) {
+    if (status === 'scheduled') return 'meeting-date-box meeting-date-scheduled';
+    return 'meeting-date-box meeting-date-muted';
   }
 
   function buildPageUrl(pageNumber) {
     const params = [];
-
-    if (filterData.q) {
-      params.push('q=' + encodeURIComponent(filterData.q));
-    }
-
-    if (filterData.status && filterData.status !== 'all') {
-      params.push('status=' + encodeURIComponent(filterData.status));
-    }
-
-    if (filterData.sort && filterData.sort !== 'latest') {
-      params.push('sort=' + encodeURIComponent(filterData.sort));
-    }
-
+    if (filterData.q) params.push('q=' + encodeURIComponent(filterData.q));
+    if (filterData.status && filterData.status !== 'all') params.push('status=' + encodeURIComponent(filterData.status));
+    if (filterData.sort && filterData.sort !== 'latest') params.push('sort=' + encodeURIComponent(filterData.sort));
     params.push('page=' + pageNumber);
-
     return '/meetings?' + params.join('&');
   }
 %>
 
 <style>
-  /* ── Meetings List — pakai CSS variables tema, ikut dark/light otomatis ── */
+  :root {
+    --fml-emerald: #059669;
+    --fml-emerald-soft: #ecfdf5;
+    --fml-emerald-border: #a7f3d0;
+    --fml-amber: #b45309;
+    --fml-amber-soft: #fffbeb;
+    --fml-amber-border: #fde68a;
+    --fml-red: #dc2626;
+    --fml-red-soft: #fef2f2;
+    --fml-red-border: #fecaca;
+    --fml-blue: #2563eb;
+    --fml-blue-soft: #eff6ff;
+    --fml-blue-border: #bfdbfe;
+    --fml-shadow: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+    --fml-shadow-hover: 0 12px 24px -8px rgba(0,0,0,.12);
+  }
+
+  .dark {
+    --fml-emerald: #34d399;
+    --fml-emerald-soft: rgba(16,185,129,.12);
+    --fml-emerald-border: rgba(52,211,153,.3);
+    --fml-amber: #fbbf24;
+    --fml-amber-soft: rgba(245,158,11,.14);
+    --fml-amber-border: rgba(251,191,36,.3);
+    --fml-red: #f87171;
+    --fml-red-soft: rgba(239,68,68,.14);
+    --fml-red-border: rgba(248,113,113,.3);
+    --fml-blue: #60a5fa;
+    --fml-blue-soft: rgba(59,130,246,.12);
+    --fml-blue-border: rgba(96,165,250,.3);
+    --fml-shadow: 0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.24);
+    --fml-shadow-hover: 0 16px 28px -10px rgba(0,0,0,.5);
+  }
 
   .meeting-page-shell {
-    min-height: calc(100vh - 72px);
+    min-height: 100vh;
     background: var(--background);
     color: var(--foreground);
   }
@@ -132,101 +115,121 @@
   }
 
   .meeting-page-content {
-    width: min(100%, 1440px);
-    margin: 0 auto;
-    padding: 18px 22px 30px;
+    width: min(100%, 1536px);
+    margin-inline: auto;
+    padding: 1rem;
   }
 
-  /* ── Header ── */
+  @media (min-width: 768px) {
+    .meeting-page-content { padding: 1.5rem; }
+  }
+
+  @media (min-width: 1280px) {
+    .meeting-page-content { padding: 2rem; }
+  }
+
   .meeting-header-row {
     display: flex;
+    flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
-    margin-bottom: 18px;
+    gap: 1rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .meeting-title-group {
+    min-width: 0;
   }
 
   .meeting-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     margin: 0;
-    font-size: 24px;
-    line-height: 1.15;
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    color: var(--foreground);
+    background: linear-gradient(90deg, var(--fml-emerald), var(--foreground));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .meeting-header-actions {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-wrap: wrap;
+  @media (min-width: 640px) {
+    .meeting-title { font-size: 2.25rem; }
+  }
+
+  .meeting-subtitle {
+    color: var(--muted-foreground);
+    font-size: .875rem;
+    font-weight: 500;
+    margin: .375rem 0 0;
   }
 
   .meeting-create-button {
-    min-height: 38px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    border-radius: 12px;
-    padding: 0 15px;
-    font-size: 12.5px;
-    font-weight: 800;
+    gap: .5rem;
+    height: 38px;
+    padding: 0 1rem;
+    border-radius: .75rem;
+    flex-shrink: 0;
+    background: var(--fml-emerald);
+    color: #fff;
     text-decoration: none;
-    transition: all 0.2s ease;
+    font-size: .8rem;
+    font-weight: 800;
     white-space: nowrap;
-    border: 1px solid #059669;
-    background: #059669;
-    color: #ffffff;
-    box-shadow: 0 8px 20px color-mix(in srgb, #059669 25%, transparent);
+    box-shadow: 0 8px 18px -6px var(--fml-emerald);
+    transition: transform .2s ease, opacity .2s ease;
   }
 
   .meeting-create-button:hover {
-    background: #047857;
-    border-color: #047857;
+    opacity: .92;
+    transform: translateY(-1px);
   }
 
-  /* ── Filter ── */
   .meeting-filter-form {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: .75rem;
     flex-wrap: wrap;
-    margin-bottom: 18px;
+    margin-bottom: 1.25rem;
   }
 
   .meeting-search-box {
     position: relative;
     flex: 1 1 300px;
-    max-width: 380px;
+    max-width: 420px;
   }
 
   .meeting-search-box > span {
     position: absolute;
-    left: 15px;
+    left: 1rem;
     top: 50%;
     transform: translateY(-50%);
-    font-size: 12.5px;
-    opacity: 0.85;
+    font-size: .8rem;
+    opacity: .8;
     pointer-events: none;
   }
 
   .meeting-search-box input,
   .meeting-filter-select {
     height: 42px;
-    border-radius: 11px;
-    border: 1.5px solid var(--border);
+    border-radius: .75rem;
+    border: 1px solid var(--border);
     background: var(--card);
     color: var(--foreground);
-    font-size: 12.5px;
+    font-size: .82rem;
     outline: none;
     font-family: inherit;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    transition: border-color .2s ease, box-shadow .2s ease;
   }
 
   .meeting-search-box input {
     width: 100%;
-    padding: 0 14px 0 42px;
+    padding: 0 1rem 0 2.75rem;
   }
 
   .meeting-search-box input::placeholder {
@@ -234,135 +237,124 @@
   }
 
   .meeting-filter-select {
-    min-width: 150px;
-    padding: 0 13px;
+    min-width: 155px;
+    padding: 0 .9rem;
     cursor: pointer;
   }
 
   .meeting-search-box input:focus,
   .meeting-filter-select:focus {
-    border-color: #10b981;
-    box-shadow: 0 0 0 3px color-mix(in srgb, #10b981 18%, transparent);
+    border-color: var(--fml-emerald);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--fml-emerald) 18%, transparent);
   }
 
   .meeting-filter-submit {
     height: 42px;
     border: none;
-    border-radius: 11px;
-    padding: 0 15px;
-    background: #059669;
-    color: #ffffff;
-    font-size: 12.5px;
+    border-radius: .75rem;
+    padding: 0 1rem;
+    background: var(--fml-emerald);
+    color: #fff;
+    font-size: .82rem;
     font-weight: 800;
     cursor: pointer;
     font-family: inherit;
-    transition: background 0.2s ease;
+    transition: transform .2s ease, opacity .2s ease;
   }
 
   .meeting-filter-submit:hover {
-    background: #047857;
+    opacity: .92;
+    transform: translateY(-1px);
   }
 
-  /* ── Alert ── */
   .meeting-alert {
-    margin-bottom: 18px;
-    border-radius: 14px;
-    border: 1px solid color-mix(in srgb, #ef4444 35%, transparent);
-    background: color-mix(in srgb, #ef4444 10%, transparent);
-    color: #ef4444;
-    padding: 12px 16px;
-    font-size: 12.5px;
+    margin-bottom: 1rem;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--fml-red) 35%, transparent);
+    background: color-mix(in srgb, var(--fml-red) 10%, transparent);
+    color: var(--fml-red);
+    padding: .8rem 1rem;
+    font-size: .82rem;
     font-weight: 800;
   }
 
-  /* ── List ── */
   .meeting-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 1rem;
   }
 
-  /* ── Card ── */
   .meeting-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    display: flex;
     align-items: center;
-    gap: 18px;
-    min-height: 78px;
+    gap: 1rem;
+    min-height: 96px;
+    border-radius: 1rem;
     border: 1px solid var(--border);
-    border-radius: 15px;
     background: var(--card);
     color: var(--card-foreground);
-    padding: 11px 14px;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-  }
-
-  .meeting-card:hover {
-    transform: translateY(-1px);
-    border-color: color-mix(in srgb, var(--border) 60%, var(--foreground));
-    background: color-mix(in srgb, var(--card) 95%, var(--foreground));
-    box-shadow: 0 12px 24px color-mix(in srgb, var(--foreground) 7%, transparent);
-  }
-
-  .meeting-main-link {
-    min-width: 0;
-    display: grid;
-    grid-template-columns: 54px minmax(0, 1fr);
-    align-items: center;
-    gap: 14px;
-    color: inherit;
+    box-shadow: var(--fml-shadow);
+    padding: 1rem 1.25rem;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease, background-color .25s ease;
     text-decoration: none;
   }
 
-  /* ── Date box ── */
+  .meeting-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--fml-shadow-hover);
+    border-color: var(--fml-emerald-border);
+  }
+
   .meeting-date-box {
-    width: 54px;
-    height: 54px;
-    border-radius: 13px;
-    background: color-mix(in srgb, #10b981 12%, transparent);
-    color: #059669;
+    width: 64px;
+    height: 64px;
+    border-radius: .9rem;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    border: 1px solid transparent;
   }
 
-  .dark .meeting-date-box {
-    color: #34d399;
+  .meeting-date-scheduled {
+    background: var(--fml-emerald-soft);
+    border-color: var(--fml-emerald-border);
+    color: var(--fml-emerald);
   }
 
-  .meeting-date-box.completed,
-  .meeting-date-box.cancelled,
-  .meeting-date-box.draft {
-    background: color-mix(in srgb, var(--muted) 60%, transparent);
+  .meeting-date-muted {
+    background: var(--muted);
+    border-color: var(--border);
     color: var(--muted-foreground);
   }
 
   .meeting-date-month {
-    font-size: 10.5px;
+    font-size: .7rem;
     line-height: 1;
-    letter-spacing: 0.08em;
+    letter-spacing: .08em;
+    text-transform: uppercase;
     font-weight: 800;
     color: var(--muted-foreground);
   }
 
   .meeting-date-day {
-    margin-top: 6px;
-    font-size: 24px;
-    line-height: 0.85;
+    margin-top: .35rem;
+    font-size: 1.65rem;
+    line-height: .9;
     font-weight: 950;
     letter-spacing: -0.08em;
   }
 
   .meeting-info {
+    flex: 1;
     min-width: 0;
   }
 
   .meeting-card-title {
     margin: 0;
-    color: var(--card-foreground);
-    font-size: 16.5px;
+    color: var(--foreground);
+    font-size: 1.05rem;
     line-height: 1.2;
     font-weight: 850;
     letter-spacing: -0.025em;
@@ -371,127 +363,111 @@
     text-overflow: ellipsis;
   }
 
-  .meeting-main-link:hover .meeting-card-title {
-    color: #10b981;
+  .meeting-card:hover .meeting-card-title {
+    color: var(--fml-emerald);
   }
 
   .meeting-meta-row {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
-    gap: 8px 15px;
-    margin-top: 8px;
+    gap: .45rem .7rem;
+    margin-top: .65rem;
     color: var(--muted-foreground);
-    font-size: 12.5px;
+    font-size: .78rem;
     font-weight: 600;
   }
 
   .meeting-meta-item {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    min-width: 0;
+    gap: .38rem;
+    border-radius: .55rem;
+    background: var(--muted);
+    padding: .25rem .55rem;
+    line-height: 1.2;
   }
 
-  /* ── Actions ── */
-  .meeting-actions {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-
-  /* ── Status pill ── */
   .meeting-status-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 25px;
-    padding: 0 12px;
+    min-height: 28px;
+    padding: 0 .8rem;
     border-radius: 999px;
-    font-size: 11.5px;
+    font-size: .76rem;
     font-weight: 900;
     line-height: 1;
     white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .meeting-status-scheduled {
-    background: color-mix(in srgb, #10b981 15%, transparent);
-    color: #059669;
-  }
-
-  .dark .meeting-status-scheduled {
-    color: #34d399;
+    background: var(--fml-emerald-soft);
+    border: 1px solid var(--fml-emerald-border);
+    color: var(--fml-emerald);
   }
 
   .meeting-status-completed {
-    background: color-mix(in srgb, var(--muted) 60%, transparent);
+    background: var(--muted);
+    border: 1px solid var(--border);
     color: var(--muted-foreground);
   }
 
   .meeting-status-cancelled {
-    background: color-mix(in srgb, #ef4444 14%, transparent);
-    color: #dc2626;
-  }
-
-  .dark .meeting-status-cancelled {
-    color: #f87171;
+    background: var(--fml-red-soft);
+    border: 1px solid var(--fml-red-border);
+    color: var(--fml-red);
   }
 
   .meeting-status-draft {
-    background: color-mix(in srgb, #f59e0b 15%, transparent);
-    color: #d97706;
+    background: var(--fml-amber-soft);
+    border: 1px solid var(--fml-amber-border);
+    color: var(--fml-amber);
   }
 
-  .dark .meeting-status-draft {
-    color: #fbbf24;
-  }
-
-  /* ── Empty state ── */
   .meeting-empty-state {
-    border: 1.5px dashed color-mix(in srgb, var(--border) 80%, var(--foreground));
-    border-radius: 16px;
+    border: 1px dashed var(--border);
+    border-radius: 1rem;
     background: var(--card);
-    padding: 36px 22px;
+    padding: 2.5rem 1.5rem;
     text-align: center;
   }
 
   .meeting-empty-state h2 {
     margin: 0;
-    font-size: 16.5px;
+    font-size: 1rem;
     font-weight: 900;
-    color: var(--card-foreground);
+    color: var(--foreground);
   }
 
   .meeting-empty-state p {
-    margin: 8px 0 0;
+    margin: .5rem 0 0;
     color: var(--muted-foreground);
-    font-size: 12.5px;
+    font-size: .82rem;
     font-weight: 600;
   }
 
-  /* ── Pagination ── */
   .meeting-pagination {
-    margin-top: 22px;
+    margin-top: 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: 1rem;
     flex-wrap: wrap;
   }
 
   .meeting-pagination p {
     margin: 0;
     color: var(--muted-foreground);
-    font-size: 12.5px;
+    font-size: .82rem;
     font-weight: 700;
   }
 
   .meeting-pagination-links {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: .5rem;
     flex-wrap: wrap;
   }
 
@@ -501,104 +477,62 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 10px;
+    border-radius: .65rem;
     border: 1px solid var(--border);
     background: var(--card);
     color: var(--card-foreground);
     text-decoration: none;
-    font-size: 12.5px;
+    font-size: .8rem;
     font-weight: 850;
-    transition: all 0.15s;
-    padding: 0 0.5rem;
+    transition: all .15s;
+    padding: 0 .55rem;
   }
 
   .meeting-page-link.active {
-    border-color: #059669;
-    background: #059669;
-    color: #ffffff;
+    border-color: var(--fml-emerald);
+    background: var(--fml-emerald);
+    color: #fff;
   }
 
   .meeting-page-link:hover:not(.active) {
-    background: color-mix(in srgb, var(--muted) 50%, transparent);
-  }
-
-  /* ── Responsive ── */
-  @media (max-width: 1100px) {
-    .meeting-card {
-      grid-template-columns: 1fr;
-    }
-
-    .meeting-actions {
-      justify-content: flex-start;
-      padding-left: 68px;
-    }
+    background: var(--muted);
   }
 
   @media (max-width: 768px) {
-    .meeting-page-content {
-      padding: 20px 16px 32px;
-    }
-
     .meeting-header-row {
       align-items: flex-start;
       flex-direction: column;
-      margin-bottom: 20px;
     }
 
-    .meeting-title {
-      font-size: 24px;
-    }
-
-    .meeting-header-actions,
-    .meeting-create-button,
+    .meeting-filter-form,
     .meeting-search-box,
     .meeting-filter-select,
-    .meeting-filter-submit {
+    .meeting-filter-submit,
+    .meeting-create-button {
       width: 100%;
       max-width: none;
     }
 
-    .meeting-main-link {
-      grid-template-columns: 52px minmax(0, 1fr);
-      gap: 12px;
-    }
-
     .meeting-card {
-      padding: 16px;
+      align-items: flex-start;
+      padding: 1rem;
     }
 
-    .meeting-date-box {
-      width: 52px;
-      height: 52px;
-    }
-
-    .meeting-date-day {
-      font-size: 24px;
-    }
-
-    .meeting-card-title {
-      font-size: 17px;
-    }
-
-    .meeting-meta-row {
-      font-size: 12.5px;
-      gap: 7px 10px;
-    }
-
-    .meeting-actions {
-      padding-left: 64px;
+    .meeting-status-pill {
+      margin-left: auto;
     }
   }
 
   @media (max-width: 520px) {
-    .meeting-main-link {
-      grid-template-columns: 1fr;
+    .meeting-card {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
     }
 
-    .meeting-actions {
-      width: 100%;
-      padding-left: 0;
-      justify-content: flex-start;
+    .meeting-status-pill {
+      grid-column: 2;
+      width: max-content;
+      margin-left: 0;
     }
   }
 </style>
@@ -607,16 +541,17 @@
   <div class="meeting-page-content">
 
     <div class="meeting-header-row">
-      <h1 class="meeting-title">Daftar Meeting</h1>
-
-      <div class="meeting-header-actions">
-        <% if (typeof canCreateMeeting !== 'undefined' && canCreateMeeting) { %>
-          <a href="/meetings/create" class="meeting-create-button">
-            <span>+</span>
-            <span>Buat Meeting</span>
-          </a>
-        <% } %>
+      <div class="meeting-title-group">
+        <h1 class="meeting-title">Daftar Meeting</h1>
+        <p class="meeting-subtitle">Kelola jadwal dan data meeting Anda.</p>
       </div>
+
+      <% if (typeof canCreateMeeting !== 'undefined' && canCreateMeeting) { %>
+        <a href="/meetings/create" class="meeting-create-button">
+          <span>+</span>
+          <span>Buat Meeting</span>
+        </a>
+      <% } %>
     </div>
 
     <% if (typeof accessMessage !== 'undefined' && accessMessage) { %>
@@ -655,41 +590,37 @@
     <div class="meeting-list">
       <% if (meetings && meetings.length > 0) { %>
         <% meetings.forEach(function(meeting) { %>
-          <div class="meeting-card">
-            <a href="/meetings/<%= meeting.id %>" class="meeting-main-link" aria-label="Buka detail <%= meeting.title %>">
-              <div class="meeting-date-box <%= meeting.status %>">
-                <div class="meeting-date-month"><%= getMonthName(meeting.meeting_date) %></div>
-                <div class="meeting-date-day"><%= getDayNumber(meeting.meeting_date) %></div>
-              </div>
-
-              <div class="meeting-info">
-                <h2 class="meeting-card-title"><%= meeting.title %></h2>
-
-                <div class="meeting-meta-row">
-                  <span class="meeting-meta-item">
-                    <span>⏰</span>
-                    <span><%= formatTime(meeting.start_time) %> – <%= formatTime(meeting.end_time) %></span>
-                  </span>
-
-                  <span class="meeting-meta-item">
-                    <span><%= getMeetingTypeIcon(meeting.meeting_type) %></span>
-                    <span><%= getMeetingTypeLabel(meeting.meeting_type) %></span>
-                  </span>
-
-                  <span class="meeting-meta-item">
-                    <span>👥</span>
-                    <span><%= meeting.participant_count || 0 %> orang</span>
-                  </span>
-                </div>
-              </div>
-            </a>
-
-            <div class="meeting-actions">
-              <span class="<%= getStatusPillClass(meeting.status) %>">
-                <%= getStatusLabel(meeting.status) %>
-              </span>
+          <a href="/meetings/<%= meeting.id %>" class="meeting-card" aria-label="Buka detail <%= meeting.title %>">
+            <div class="<%= getDateBoxClass(meeting.status) %>">
+              <div class="meeting-date-month"><%= getMonthName(meeting.meeting_date) %></div>
+              <div class="meeting-date-day"><%= getDayNumber(meeting.meeting_date) %></div>
             </div>
-          </div>
+
+            <div class="meeting-info">
+              <h2 class="meeting-card-title"><%= meeting.title %></h2>
+
+              <div class="meeting-meta-row">
+                <span class="meeting-meta-item">
+                  <span>⏰</span>
+                  <span><%= formatTime(meeting.start_time) %> - <%= formatTime(meeting.end_time) %></span>
+                </span>
+
+                <span class="meeting-meta-item">
+                  <span><%= getMeetingTypeIcon(meeting.meeting_type) %></span>
+                  <span><%= getMeetingTypeLabel(meeting.meeting_type) %></span>
+                </span>
+
+                <span class="meeting-meta-item">
+                  <span>👥</span>
+                  <span><%= meeting.participant_count || 0 %> orang</span>
+                </span>
+              </div>
+            </div>
+
+            <span class="<%= getStatusPillClass(meeting.status) %>">
+              <%= getStatusLabel(meeting.status) %>
+            </span>
+          </a>
         <% }) %>
       <% } else { %>
         <div class="meeting-empty-state">

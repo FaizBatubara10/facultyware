@@ -260,7 +260,7 @@
             <% if (meetingMendatang && meetingMendatang.length > 0) { %>
               <% meetingMendatang.forEach(meeting => { %>
 
-                <div class="fwd-meeting-card" onclick="window.location.href='/meetings'">
+                <div class="fwd-meeting-card" onclick="window.location.href='/meetings/<%= meeting.id %>'">
                   <div class="fwd-meeting-date">
                     <div class="fwd-meeting-month"><%= new Date(meeting.meeting_date).toLocaleString('id-ID', { month: 'short' }) %></div>
                     <div class="fwd-meeting-day"><%= new Date(meeting.meeting_date).getDate() %></div>
@@ -280,7 +280,7 @@
                     </div>
                   </div>
 
-                  <span class="fwd-meeting-status">Terjadwal</span>
+                  <span class="fwd-meeting-status">Scheduled</span>
                 </div>
 
               <% }) %>
