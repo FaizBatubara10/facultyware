@@ -67,21 +67,32 @@ const home = async (req, res, next) => {
 
     // 4. Jumlah file notulensi yang sudah diupload
     const [hasilNotulenPending] = await db.query(
-      `SELECT COUNT(*) AS total FROM meeting_minutes`
-    );
-    const totalNotulenPending = hasilNotulenPending[0].total;
+  `SELECT COUNT(*) AS total 
+   FROM meeting_minutes mm
+   JOIN meetings m ON mm.meeting_id = m.id
+   WHERE m.organizer_id = ?
+      OR mm.meeting_id IN (
+        SELECT meeting_id FROM meeting_participants
+        WHERE employee_id = ? AND status = 'attended'
+      )`,
+  [employeeId, employeeId]
+);
+const totalNotulenPending = hasilNotulenPending[0].total;
 
     // 5. Notulen terbaru (maks 3)
-    const [notulenTerbaru] = await db.query(`
-      SELECT 
-        mm.id,
-        m.title AS meeting_title,
-        DATE_FORMAT(mm.created_at, '%d %b %Y') AS uploaded_at
-      FROM meeting_minutes mm
-      JOIN meetings m ON mm.meeting_id = m.id
-      ORDER BY mm.created_at DESC
-      LIMIT 3
-    `);
+   const [notulenTerbaru] = await db.query(`
+  SELECT mm.id, m.title AS meeting_title,
+    DATE_FORMAT(mm.created_at, '%d %b %Y') AS uploaded_at
+  FROM meeting_minutes mm
+  JOIN meetings m ON mm.meeting_id = m.id
+  WHERE m.organizer_id = ?
+     OR mm.meeting_id IN (
+       SELECT meeting_id FROM meeting_participants
+       WHERE employee_id = ? AND status = 'attended'
+     )
+  ORDER BY mm.created_at DESC
+  LIMIT 3
+`, [employeeId, employeeId]);
 
     // 6. Total peserta unik di meeting yang dia buat
     const [hasilTotalPeserta] = await db.query(

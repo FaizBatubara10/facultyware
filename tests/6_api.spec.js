@@ -21,7 +21,8 @@ test.describe('API Module', () => {
       }
     });
     expect(response.ok()).toBeTruthy();
-    const json = await response.json();
-    expect(json).toHaveProperty('data');
+    const detailBody = await response.json();
+    const detail = detailBody.data;
+    expect(detail).toBeDefined();
   });
 });

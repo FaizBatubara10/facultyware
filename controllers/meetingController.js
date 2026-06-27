@@ -476,7 +476,7 @@ const show = async (req, res, next) => {
       && Number(meeting.has_started) === 1
       && meeting.status === 'completed';
 
-    const canExportAttendance = isHost;
+    const canExportAttendance = isHost && isAttendanceExportReady(participants, externalParticipants);
 
     const exportAttendanceMessage = canExportAttendance
       ? null

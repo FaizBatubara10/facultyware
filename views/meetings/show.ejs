@@ -505,33 +505,37 @@ input::placeholder, textarea::placeholder { color: var(--muted-foreground); }
 
         <% if (typeof isHost !== 'undefined' && isHost) { %>
           <div class="detail-actions">
-            <% if (typeof canExportAttendance !== 'undefined' && canExportAttendance) { %>
-              <a
-                href="/meetings/<%= meeting.id %>/export-attendance"
-                class="detail-button"
-                title="Export daftar hadir peserta meeting dalam format Excel"
-                download
-              >
-                <span>📤</span>
-                <span>Export Daftar Hadir</span>
-              </a>
-            <% } else { %>
-              <%
-                const exportAttendanceDisabledMessage =
-                  typeof exportAttendanceMessage !== 'undefined' && exportAttendanceMessage
-                    ? exportAttendanceMessage
-                    : 'Export belum tersedia.';
-              %>
-              <button
-                type="button"
-                class="detail-button disabled"
-                title="<%= exportAttendanceDisabledMessage %>"
-                data-export-message="<%= exportAttendanceDisabledMessage %>"
-                onclick="alert(this.dataset.exportMessage)"
-              >
-                <span>📤</span>
-                <span>Export Daftar Hadir</span>
-              </button>
+
+            <%# Tombol Export hanya tampil jika status completed %>
+            <% if (meeting.status === 'completed') { %>
+              <% if (typeof canExportAttendance !== 'undefined' && canExportAttendance) { %>
+                <a
+                  href="/meetings/<%= meeting.id %>/export-attendance"
+                  class="detail-button"
+                  title="Export daftar hadir peserta meeting dalam format Excel"
+                  download
+                >
+                  <span>📤</span>
+                  <span>Export Daftar Hadir</span>
+                </a>
+              <% } else { %>
+                <%
+                  const exportAttendanceDisabledMessage =
+                    typeof exportAttendanceMessage !== 'undefined' && exportAttendanceMessage
+                      ? exportAttendanceMessage
+                      : 'Export belum tersedia.';
+                %>
+                <button
+                  type="button"
+                  class="detail-button disabled"
+                  title="<%= exportAttendanceDisabledMessage %>"
+                  data-export-message="<%= exportAttendanceDisabledMessage %>"
+                  onclick="alert(this.dataset.exportMessage)"
+                >
+                  <span>📤</span>
+                  <span>Export Daftar Hadir</span>
+                </button>
+              <% } %>
             <% } %>
 
             <% if (canShowEditAttendance) { %>
