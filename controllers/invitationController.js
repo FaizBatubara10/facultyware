@@ -2,6 +2,7 @@ const db = require("../lib/db");
 
 // GET /invitations/inbox
 // Tampil semua undangan milik user yang sedang login (status = invited)
+// Hanya dari meeting yang bukan draft
 const inbox = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
@@ -24,6 +25,7 @@ const inbox = async (req, res, next) => {
       JOIN meetings m ON mp.meeting_id = m.id
       WHERE mp.employee_id = ?
         AND mp.status = 'invited'
+        AND m.status != 'draft'
       ORDER BY m.meeting_date ASC, m.start_time ASC
       `,
       [employeeId]
@@ -81,6 +83,14 @@ const detail = async (req, res, next) => {
 
     const undangan = rows[0];
 
+    // Blokir akses detail jika meeting masih draft
+    if (undangan.meeting_status === 'draft') {
+      return res.status(403).render("error", {
+        message: "Undangan ini belum dapat diakses karena rapat masih dalam status draft.",
+        error: { status: 403 },
+      });
+    }
+
     // Ambil semua peserta rapat yang sama
     const [peserta] = await db.query(
       `
@@ -125,13 +135,16 @@ const updateStatus = async (req, res, next) => {
 
     // Pastikan record ini milik user yang login
     const [rows] = await db.query(
-      `SELECT id FROM meeting_participants WHERE id = ? AND employee_id = ? LIMIT 1`,
+      `SELECT mp.id FROM meeting_participants mp
+       JOIN meetings m ON mp.meeting_id = m.id
+       WHERE mp.id = ? AND mp.employee_id = ? AND m.status != 'draft'
+       LIMIT 1`,
       [participantId, employeeId]
     );
 
     if (rows.length === 0) {
       return res.status(403).render("error", {
-        message: "Akses ditolak.",
+        message: "Akses ditolak atau undangan belum dapat direspons.",
         error: { status: 403 },
       });
     }
