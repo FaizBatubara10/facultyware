@@ -177,7 +177,9 @@ http://localhost:3000
 
 ## Testing
 
-Testing dilakukan menggunakan Playwright dengan browser Chromium. Pengujian dilakukan untuk memastikan fitur utama berjalan sesuai kebutuhan, meliputi autentikasi, API, pengelolaan meeting, undangan, kehadiran, export daftar hadir, dan notulensi.
+Testing sistem web FTI Meeting dilakukan menggunakan Playwright dengan browser Chromium. Pengujian dilakukan untuk memastikan fitur utama berjalan sesuai kebutuhan, meliputi autentikasi, dashboard, pengelolaan meeting, undangan, kehadiran, export daftar hadir, notulensi, dan REST API.
+
+Pengujian dilakukan sebanyak dua tahap. Tahap pertama merupakan testing awal dengan jumlah test case yang masih terbatas, yaitu 7 test case. Setelah fitur sistem diperbaiki dan kebutuhan pengujian diperluas, dilakukan testing tahap kedua dengan cakupan yang lebih lengkap sebanyak 40 test case.
 
 Perintah menjalankan testing:
 
@@ -191,14 +193,36 @@ Perintah membuka report testing:
 npx playwright show-report
 ```
 
-Ringkasan hasil testing:
+Ringkasan hasil testing tahap pertama:
 
-- Total test case: 7
-- Passed: 7
-- Failed: 0
-- Pass rate: 100%
-- Browser: Chromium
-- Environment: Localhost
+* Total test case: 7
+* Passed: 7
+* Failed: 0
+* Pass rate: 100%
+* Browser: Chromium
+* Environment: Localhost
+
+Ringkasan hasil testing tahap kedua:
+
+* Total test case: 40
+* Passed: 40
+* Failed: 0
+* Pass rate: 100%
+* Browser: Chromium
+* Environment: Localhost
+
+Modul yang diuji pada testing tahap kedua:
+
+* Authentication
+* Dashboard
+* Meetings List
+* Meetings CRUD
+* Invitations
+* Attendance & Export
+* REST API
+* Minutes / Notulensi
+
+Testing tahap kedua dilakukan untuk memperluas cakupan pengujian dari testing awal. Dengan demikian, hasil testing akhir menunjukkan bahwa fitur utama sistem web FTI Meeting dapat berjalan sesuai kebutuhan.
 
 ## Deployment
 
