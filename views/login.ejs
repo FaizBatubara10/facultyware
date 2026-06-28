@@ -111,16 +111,85 @@
   <body
     class="bg-background *:data-[slot=card]:has-[[data-slot=chart]]:shadow-none"
   >
-    <div
-      class="flex min-h-svh flex-col items-center justify-center bg-muted p-6 md:p-10"
-    >
-      <div class="w-full max-w-sm md:max-w-4xl">
-        <div class="flex flex-col gap-6">
+    <%# Layout: 2 kolom full height — kiri foto, kanan panel hijau + form %>
+    <div style="display:flex; min-height:100svh;">
+
+      <%# ── Kolom KIRI: branding utama, foto jadi background ── %>
+      <div style="flex:1; position:relative; overflow:hidden; min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+
+        <%# Foto sebagai background %>
+        <img
+          src="/assets/images/fti-building.png"
+          alt="Gedung FTI Unand"
+          style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center;"
+        />
+
+        <%# Overlay — menyesuaikan mode %>
+        <div id="kiri-overlay" style="position:absolute; inset:0; transition:background 0.3s;"></div>
+        <script>
+          (function() {
+            const overlay = document.getElementById('kiri-overlay');
+            const card = document.getElementById('kiri-card');
+            const texts = document.querySelectorAll('.kiri-text');
+            const subtext = document.querySelectorAll('.kiri-subtext');
+            if (!overlay) return;
+            const apply = () => {
+              const isDark = document.documentElement.classList.contains('dark');
+              overlay.style.background = isDark ? 'rgba(0,0,0,0.72)' : 'rgba(255,255,255,0.3)';
+              if (card) {
+                card.style.background = isDark ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.75)';
+                card.style.borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.9)';
+              }
+              texts.forEach(el => { el.style.color = isDark ? '#fff' : '#064e3b'; });
+              subtext.forEach(el => { el.style.color = isDark ? 'rgba(255,255,255,0.6)' : '#374151'; });
+            };
+            apply();
+            document.addEventListener('basecoat:theme', apply);
+          })();
+        </script>
+
+        <%# Konten branding di tengah — card horizontal %>
+        <div id="kiri-card" style="position:relative; z-index:2; display:flex; flex-direction:row; align-items:center; gap:1.75rem; text-align:left; padding:2rem 2.25rem; margin:2rem; border-radius:1.25rem; background:rgba(0,0,0,0.18); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.08); box-shadow:0 4px 16px rgba(0,0,0,0.12); transition:background 0.3s, border-color 0.3s;">
+
+          <%# Logo FTI %>
+          <div style="flex-shrink:0; width:80px; height:80px; border-radius:18px; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center;">
+            <img
+              src="/assets/images/fti-logo.png"
+              alt="Logo FTI Unand"
+              style="width:64px; height:64px; object-fit:contain;"
+            />
+          </div>
+
+          <%# Teks branding %>
+          <div>
+            <h1 class="kiri-text" style="margin:0 0 0.35rem; font-size:1.75rem; font-weight:800; color:#fff; letter-spacing:-0.02em; line-height:1.2; transition:color 0.3s;">FTI Meeting</h1>
+            <p style="margin:0 0 0.4rem; font-size:0.9rem; color:#6ee7b7; font-weight:500;">Fakultas Teknologi Informasi</p>
+            <p class="kiri-subtext" style="margin:0 0 1rem; font-size:0.8rem; color:rgba(255,255,255,0.6); line-height:1.7; transition:color 0.3s;">Platform manajemen rapat terpadu<br/>Universitas Andalas</p>
+            <div style="width:40px; height:3px; border-radius:99px; background:linear-gradient(90deg,#059669,#6ee7b7);"></div>
+          </div>
+        </div>
+
+        <%# Label bawah %>
+        <div style="position:absolute; bottom:1.5rem; left:0; right:0; text-align:center; z-index:2;">
+          <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:0.08em; text-transform:uppercase;">Universitas Andalas · Padang</p>
+        </div>
+      </div>
+
+      <%# ── Kolom KANAN: panel hijau emerald + card form ── %>
+      <div style="flex:1; background:#059669; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem 2rem; position:relative; overflow:hidden;">
+
+        <%# Dekorasi lingkaran transparan %>
+        <div style="position:absolute; bottom:-100px; right:-100px; width:350px; height:350px; border-radius:50%; background:rgba(255,255,255,0.06);"></div>
+        <div style="position:absolute; top:-80px; left:-80px; width:260px; height:260px; border-radius:50%; background:rgba(255,255,255,0.05);"></div>
+        <div style="position:absolute; bottom:60px; left:-40px; width:160px; height:160px; border-radius:50%; border:2px solid rgba(255,255,255,0.1);"></div>
+
+        <%# Card form login — struktur asli dipertahankan %>
+        <div style="width:100%; max-width:22rem; background:var(--card); color:var(--card-foreground); border-radius:1rem; box-shadow:0 8px 40px rgba(0,0,0,0.15); overflow:hidden; position:relative; z-index:1;">
           <div
             data-slot="card"
             class="flex flex-col gap-6 rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden p-0"
           >
-            <div data-slot="card-content" class="grid p-0 md:grid-cols-2">
+            <div data-slot="card-content" class="p-0">
               <form class="p-6 md:p-8" action="/login" method="POST">
                 <div
                   data-slot="field-group"
@@ -132,7 +201,7 @@
                       Login to your account
                     </p>
                   </div>
-                  
+
                   <% if (error) { %>
                     <div class="bg-destructive/15 text-destructive text-sm p-3 rounded-md border border-destructive/20 text-center">
                       <%= error %>
@@ -156,7 +225,6 @@
                       data-slot="input"
                       class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
                       id="username"
-                      placeholder="admin"
                       required=""
                     />
                   </div>
@@ -213,26 +281,21 @@
                   </p>
                 </div>
               </form>
-              <div class="relative hidden bg-muted md:block">
-                <img
-                  src="/assets/images/placeholder.svg"
-                  alt="Image"
-                  class="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-                />
-              </div>
             </div>
           </div>
-          <p
-            data-slot="field-description"
-            class="text-sm leading-normal font-normal text-muted-foreground group-has-[[data-orientation=horizontal]]/field:text-balance last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&amp;]:-mt-1.5 [&amp;&gt;a]:underline [&amp;&gt;a]:underline-offset-4 [&amp;&gt;a:hover]:text-primary px-6 text-center"
-          >
-            By clicking continue, you agree to our
-            <a href="#">Terms of Service</a>
-            <!-- -->and <a href="#">Privacy Policy</a>.
-          </p>
         </div>
+
+        <%# Terms di bawah card %>
+        <p style="margin-top:1.5rem; font-size:0.75rem; color:rgba(255,255,255,0.65); text-align:center; position:relative; z-index:1;">
+          By clicking continue, you agree to our
+          <a href="#" style="color:rgba(255,255,255,0.85); text-decoration:underline;">Terms of Service</a>
+          and
+          <a href="#" style="color:rgba(255,255,255,0.85); text-decoration:underline;">Privacy Policy</a>.
+        </p>
+
       </div>
     </div>
+
     <div id="toaster" class="toaster"></div>
   </body>
 </html>
