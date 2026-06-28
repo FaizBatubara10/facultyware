@@ -23,7 +23,7 @@ const inbox = async (req, res, next) => {
       JOIN meetings m ON mp.meeting_id = m.id
       WHERE mp.employee_id = ?
         AND mp.status = 'invited'
-        AND m.status != 'draft'
+        AND m.status NOT IN ('draft', 'cancelled')
       ORDER BY m.meeting_date ASC, m.start_time ASC
       `,
       [employeeId]
@@ -133,7 +133,7 @@ const updateStatus = async (req, res, next) => {
     const [rows] = await db.query(
       `SELECT mp.id FROM meeting_participants mp
        JOIN meetings m ON mp.meeting_id = m.id
-       WHERE mp.id = ? AND mp.employee_id = ? AND m.status != 'draft'
+      WHERE mp.id = ? AND mp.employee_id = ? AND m.status NOT IN ('draft', 'cancelled')
        LIMIT 1`,
       [participantId, employeeId]
     );

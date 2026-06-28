@@ -50,7 +50,7 @@ const home = async (req, res, next) => {
        FROM meeting_participants mp
        JOIN meetings m ON mp.meeting_id = m.id
        WHERE mp.employee_id = ? AND mp.status = 'invited'
-         AND m.status != 'draft'
+         AND m.status NOT IN ('draft', 'cancelled')
        ORDER BY m.meeting_date ASC LIMIT 3`,
       [employeeId]
     );
@@ -60,7 +60,8 @@ const home = async (req, res, next) => {
        FROM meeting_participants mp
        JOIN meetings m ON mp.meeting_id = m.id
        WHERE mp.employee_id = ? AND mp.status = 'invited'
-         AND m.status != 'draft'`,
+         AND m.status NOT IN ('draft', 'cancelled')
+       `,
       [employeeId]
     );
     const totalUndanganPending = hasilPending[0].total;
