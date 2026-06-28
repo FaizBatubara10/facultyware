@@ -47,20 +47,23 @@ const home = async (req, res, next) => {
       [employeeId, employeeId]
     );
 
-    // 3. Undangan pending milik user yang login
+    // 3. Undangan pending milik user yang login (exclude draft)
     const [undanganTerbaru] = await db.query(
       `SELECT mp.id AS participant_id, m.title, m.meeting_date
        FROM meeting_participants mp
        JOIN meetings m ON mp.meeting_id = m.id
        WHERE mp.employee_id = ? AND mp.status = 'invited'
+         AND m.status != 'draft'
        ORDER BY m.meeting_date ASC LIMIT 3`,
       [employeeId]
     );
 
     const [hasilPending] = await db.query(
       `SELECT COUNT(*) AS total 
-       FROM meeting_participants 
-       WHERE employee_id = ? AND status = 'invited'`,
+       FROM meeting_participants mp
+       JOIN meetings m ON mp.meeting_id = m.id
+       WHERE mp.employee_id = ? AND mp.status = 'invited'
+         AND m.status != 'draft'`,
       [employeeId]
     );
     const totalUndanganPending = hasilPending[0].total;
