@@ -1,7 +1,7 @@
 <%- include('../partials/header') %>
 
 <style>
-  /* Token warna konsisten dengan dashboard & kotak masuk (adaptif light/dark) */
+  
   :root{
     --fwd-emerald:#059669;  --fwd-emerald-soft:#ecfdf5;  --fwd-emerald-bd:#a7f3d0;
     --fwd-blue:#2563eb;     --fwd-blue-soft:#eff6ff;     --fwd-blue-bd:#bfdbfe;
@@ -123,7 +123,6 @@
       Kembali ke Kotak Masuk
     </a>
 
-    <!-- Alert sukses -->
     <% if (typeof query !== 'undefined' && query.success) { %>
       <% const isConfirmed = query.success === 'confirmed'; %>
       <div class="fwd-alert <%= isConfirmed ? 'fwd-alert-ok' : 'fwd-alert-no' %>">
@@ -140,10 +139,8 @@
       </div>
     <% } %>
 
-    <!-- Card utama -->
     <div class="fwd-card">
 
-      <!-- Header card -->
       <div class="fwd-card-section">
         <div class="fwd-detail-head">
           <div>
@@ -164,7 +161,7 @@
             <% } %>
           </div>
 
-          <!-- Tanggal -->
+          
           <div class="fwd-date-box">
             <div class="fwd-date-month"><%= new Date(undangan.meeting_date).toLocaleString('id-ID', { month: 'short' }) %></div>
             <div class="fwd-date-day"><%= new Date(undangan.meeting_date).getDate() %></div>
@@ -173,7 +170,7 @@
         </div>
       </div>
 
-      <!-- Detail info -->
+      
       <div class="fwd-card-section fwd-info-grid">
 
         <div class="fwd-info-item">
@@ -225,7 +222,7 @@
 
       </div>
 
-      <!-- Daftar peserta -->
+      
       <div class="fwd-card-section">
         <h3 class="fwd-section-title">
           Peserta Rapat
@@ -259,7 +256,7 @@
         </div>
       </div>
 
-      <!-- Tombol aksi -->
+      
 <div class="fwd-card-section">
   <% 
     const meetingDateTime = new Date(undangan.meeting_date);

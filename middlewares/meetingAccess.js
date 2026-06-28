@@ -1,10 +1,6 @@
 const db = require('../lib/db');
 
-/*
-  Helper:
-  Mengecek apakah user login punya data employee.
-  Di database project ini, employees.id terhubung ke users.id.
-*/
+
 const getCurrentEmployee = async (userId) => {
   if (!userId) {
     return null;
@@ -24,10 +20,7 @@ const getCurrentEmployee = async (userId) => {
   return rows.length > 0 ? rows[0] : null;
 };
 
-/*
-  isEmployee:
-  Dipakai untuk membatasi fitur create meeting.
-*/
+
 const isEmployee = async (req, res, next) => {
   try {
     const employee = await getCurrentEmployee(req.session.userId);
@@ -43,12 +36,7 @@ const isEmployee = async (req, res, next) => {
   }
 };
 
-/*
-  canAccessMeeting:
-  Detail meeting hanya boleh dibuka oleh:
-  1. host meeting
-  2. peserta internal yang diundang
-*/
+
 const canAccessMeeting = async (req, res, next) => {
   const meetingId = req.params.id;
 

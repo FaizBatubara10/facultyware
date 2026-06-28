@@ -1,19 +1,7 @@
 <%- include('../partials/header') %>
 
 <%
-  /*
-    ==========================================================================
-    PERSIAPAN DATA UNTUK FORM EDIT
-    ==========================================================================
-
-    meeting_date dari database bisa berupa Date object atau string.
-    Input type="date" butuh format YYYY-MM-DD.
-
-    start_time dan end_time dari database biasanya formatnya 09:00:00.
-    Untuk tampilan form cukup ambil 09:00.
-  */
-
-  const meetingDateValue = meeting.meeting_date
+const meetingDateValue = meeting.meeting_date
     ? (meeting.meeting_date.toISOString
       ? meeting.meeting_date.toISOString().slice(0, 10)
       : String(meeting.meeting_date).slice(0, 10))
@@ -29,10 +17,7 @@
 %>
 
 <style>
-  /*
-    Halaman edit meeting dibuat seperti modal di atas halaman detail.
-    Opsi "Sampai Selesai" sudah dihapus, karena database asli mewajibkan end_time terisi.
-  */
+  
 
   body {
     overflow: hidden;
@@ -74,10 +59,7 @@
     background: #f4f1eb;
   }
 
-  /*
-    Background edit dibuat menyerupai halaman detail meeting,
-    jadi modal edit tidak lagi terasa muncul di atas halaman hitam.
-  */
+  
   .edit-page-background .text-white {
     color: #111111 !important;
   }
@@ -245,13 +227,6 @@
     min-height: 90px;
   }
 
-  /*
-    CUSTOM TIME PICKER
-
-    User memilih jam dan menit dari panel custom.
-    Tidak ada opsi "Sampai Selesai".
-    Waktu selesai wajib lebih besar dari waktu mulai.
-  */
 
   .time-range-control {
     display: grid;
@@ -884,9 +859,6 @@
 </script>
 
 <script>
-  // =========================================================
-  // PESERTA MEETING
-  // =========================================================
 
   const selectedParticipantsJson = document.getElementById('selectedParticipantsJson');
 
@@ -1002,9 +974,7 @@
     });
   }
 
-  // =========================================================
-  // PESERTA EKSTERNAL
-  // =========================================================
+ 
 
   const selectedExternalParticipantsJson = document.getElementById('selectedExternalParticipantsJson');
 
@@ -1094,9 +1064,7 @@
     externalParticipantsInput.value = JSON.stringify(selectedExternalParticipants);
   }
 
-  // =========================================================
-  // CUSTOM TIME PICKER
-  // =========================================================
+ 
 
   const timePickerState = {
     target: null,
@@ -1166,10 +1134,7 @@
       startTimeInput.value = timeValue;
       startDisplay.value = timeValue;
 
-      /*
-        Kalau waktu mulai diubah dan waktu selesai lama jadi tidak valid,
-        waktu selesai otomatis dibuat 1 jam setelah waktu mulai.
-      */
+      
       if (
         endTimeInput.value &&
         timeToMinutes(endTimeInput.value) <= timeToMinutes(timeValue)

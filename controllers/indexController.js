@@ -12,7 +12,6 @@ const home = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
 
-    // Sinkronisasi status meeting sebelum data dashboard ditampilkan
     await db.query(`
       UPDATE meetings
       SET status = CASE
@@ -25,7 +24,6 @@ const home = async (req, res, next) => {
         AND TIMESTAMP(meeting_date, start_time) <= NOW()
     `);
 
-    // 1. Total meeting bulan ini
     const [hasilTotal] = await db.query(`
       SELECT COUNT(*) AS total 
       FROM meetings 
@@ -34,7 +32,7 @@ const home = async (req, res, next) => {
     `);
     const totalMeetingBulanIni = hasilTotal[0].total;
 
-    // 2. Meeting mendatang — hanya meeting berstatus scheduled yang dia host atau dia diundang (maks 3)
+
     const [meetingMendatang] = await db.query(
       `SELECT DISTINCT m.id, m.title, m.meeting_date, m.start_time, m.end_time, m.meeting_type, m.status
        FROM meetings m
@@ -47,7 +45,6 @@ const home = async (req, res, next) => {
       [employeeId, employeeId]
     );
 
-    // 3. Undangan pending milik user yang login (exclude draft)
     const [undanganTerbaru] = await db.query(
       `SELECT mp.id AS participant_id, m.title, m.meeting_date
        FROM meeting_participants mp
@@ -68,7 +65,7 @@ const home = async (req, res, next) => {
     );
     const totalUndanganPending = hasilPending[0].total;
 
-    // 4. Jumlah file notulensi yang sudah diupload
+  
     const [hasilNotulenPending] = await db.query(
   `SELECT COUNT(*) AS total 
    FROM meeting_minutes mm
@@ -82,7 +79,7 @@ const home = async (req, res, next) => {
 );
 const totalNotulenPending = hasilNotulenPending[0].total;
 
-    // 5. Notulen terbaru (maks 3)
+
    const [notulenTerbaru] = await db.query(`
   SELECT mm.id, m.title AS meeting_title,
     DATE_FORMAT(mm.created_at, '%d %b %Y') AS uploaded_at
@@ -97,7 +94,6 @@ const totalNotulenPending = hasilNotulenPending[0].total;
   LIMIT 3
 `, [employeeId, employeeId]);
 
-    // 6. Total peserta unik di meeting yang dia buat
     const [hasilTotalPeserta] = await db.query(
       `SELECT COUNT(DISTINCT mp.employee_id) AS total
        FROM meeting_participants mp
@@ -107,7 +103,7 @@ const totalNotulenPending = hasilNotulenPending[0].total;
     );
     const totalPeserta = hasilTotalPeserta[0].total;
 
-    // 7. Grafik jumlah rapat per bulan (tahun ini, hanya yang user terlibat)
+    
 const [hasilRapatBulanan] = await db.query(`
   SELECT MONTH(m.meeting_date) AS bulan, COUNT(DISTINCT m.id) AS total
   FROM meetings m

@@ -1,13 +1,13 @@
 const multer = require('multer');
 const fs = require('fs');
 
-// Tentukan lokasi folder upload dan buat jika belum ada
+
 const uploadDir = './public/assets/uploads/';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Konfigurasi penyimpanan file
+
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, uploadDir);
@@ -34,7 +34,7 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Instance multer siap pakai
+
 const upload = multer({
   storage: storage,
   fileFilter: fileFilter,

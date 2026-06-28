@@ -1,8 +1,6 @@
 const db = require("../lib/db");
 
-// GET /invitations/inbox
-// Tampil semua undangan milik user yang sedang login (status = invited)
-// Hanya dari meeting yang bukan draft
+
 const inbox = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
@@ -41,14 +39,13 @@ const inbox = async (req, res, next) => {
   }
 };
 
-// GET /invitations/:participantId
-// Halaman detail undangan tertentu
+
 const detail = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
     const participantId = req.params.participantId;
 
-    // Ambil detail undangan + pastikan milik user yang login
+   
     const [rows] = await db.query(
       `
       SELECT 
@@ -83,7 +80,7 @@ const detail = async (req, res, next) => {
 
     const undangan = rows[0];
 
-    // Blokir akses detail jika meeting masih draft
+    
     if (undangan.meeting_status === 'draft') {
       return res.status(403).render("error", {
         message: "Undangan ini belum dapat diakses karena rapat masih dalam status draft.",
@@ -117,13 +114,12 @@ const detail = async (req, res, next) => {
   }
 };
 
-// POST /invitations/:participantId/status
-// Update status undangan: terima -> otomatis 'attended', tolak -> otomatis 'absent'
+
 const updateStatus = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
     const participantId = req.params.participantId;
-    const { status } = req.body; // 'confirmed' atau 'declined' dari form
+    const { status } = req.body; 
 
     const allowedStatus = ["confirmed", "declined"];
     if (!allowedStatus.includes(status)) {
@@ -133,7 +129,7 @@ const updateStatus = async (req, res, next) => {
       });
     }
 
-    // Pastikan record ini milik user yang login
+    
     const [rows] = await db.query(
       `SELECT mp.id FROM meeting_participants mp
        JOIN meetings m ON mp.meeting_id = m.id
@@ -149,7 +145,7 @@ const updateStatus = async (req, res, next) => {
       });
     }
 
-    // Terima undangan -> langsung tercatat hadir, tolak -> langsung tercatat tidak hadir
+    
     const finalStatus = status === "confirmed" ? "attended" : "absent";
 
     await db.query(

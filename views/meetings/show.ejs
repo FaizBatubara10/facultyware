@@ -98,8 +98,6 @@
 %>
 
 <style>
-/* ── Meeting Detail Page — CSS variables tema ── */
-
 .detail-shell {
   min-height: calc(100vh - 72px);
   background: var(--background);
@@ -114,7 +112,7 @@
   padding: 16px 22px 30px;
 }
 
-/* ── Sticky header ── */
+
 .detail-sticky-header {
   position: sticky; top: 0; left: 0; right: 0; z-index: 60; width: 100%;
   background: color-mix(in srgb, var(--background) 97%, transparent);
@@ -156,7 +154,7 @@
 }
 .detail-actions form { margin: 0; }
 
-/* ── Buttons ── */
+
 .detail-button, .detail-danger-button {
   min-height: 32px; display: inline-flex; align-items: center; justify-content: center;
   gap: 7px; border-radius: 11px; padding: 0 11px;
@@ -204,7 +202,7 @@
 .dark .detail-danger-button { color: #f87171; }
 .detail-danger-button:hover { background: color-mix(in srgb, #ef4444 18%, transparent); }
 
-/* ── Pills ── */
+
 .detail-pill, .participant-pill {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 22px; border-radius: 999px; padding: 0 10px;
@@ -241,7 +239,7 @@
   color: var(--muted-foreground);
 }
 
-/* ── Description card ── */
+
 .detail-description-card {
   border: 1px solid var(--border); border-radius: 15px;
   background: var(--card); padding: 12px 15px; margin-bottom: 12px;
@@ -257,7 +255,7 @@
   font-size: 13px; font-weight: 650; line-height: 1.55;
 }
 
-/* ── Draft notice banner ── */
+
 .detail-draft-notice {
   display: flex; align-items: center; gap: 10px;
   border: 1px solid color-mix(in srgb, #f59e0b 35%, transparent);
@@ -270,7 +268,7 @@
 .dark .detail-draft-notice { color: #fbbf24; }
 .detail-draft-notice-icon { font-size: 16px; flex-shrink: 0; }
 
-/* ── Main card ── */
+
 .detail-main-card {
   border: 1px solid var(--border); border-radius: 16px;
   background: var(--card); overflow: hidden;
@@ -333,7 +331,6 @@
   font-size: 10.5px; font-weight: 850; text-transform: uppercase; letter-spacing: 0.03em;
 }
 
-/* Info grid */
 .detail-info-grid {
   display: grid; grid-template-columns: repeat(4, minmax(0,1fr));
   gap: 10px; padding: 13px 16px;
@@ -379,7 +376,6 @@
 
 .min-w-0 { min-width: 0; }
 
-/* ── Participants ── */
 .participant-grid { display: grid; grid-template-columns: minmax(0,1fr); gap: 9px; }
 
 .participant-card {
@@ -416,7 +412,6 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
-/* ── Attendance edit ── */
 .attendance-control, .attendance-save-row { display: none; }
 .attendance-editing .participant-pill { display: none; }
 .attendance-editing .attendance-control,
@@ -438,7 +433,6 @@
   margin-top: 12px; justify-content: flex-end; align-items: center; gap: 8px;
 }
 
-/* ── Minutes ── */
 .minute-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 9px; }
 
 .minute-card {
@@ -461,7 +455,7 @@
   font-size: 12.2px; font-weight: 600; line-height: 1.45;
 }
 
-/* ── Empty state ── */
+
 .detail-empty {
   border: 1.5px dashed color-mix(in srgb, var(--border) 80%, var(--foreground));
   border-radius: 13px; background: var(--card); padding: 18px 16px; text-align: center;
@@ -470,7 +464,6 @@
   margin: 0; color: var(--muted-foreground); font-size: 12.5px; font-weight: 750; line-height: 1.5;
 }
 
-/* ── Form inputs ── */
 input, textarea, select {
   color: var(--foreground);
   background-color: var(--card);
@@ -478,7 +471,7 @@ input, textarea, select {
 }
 input::placeholder, textarea::placeholder { color: var(--muted-foreground); }
 
-/* ── Responsive ── */
+
 @media (max-width: 1000px) {
   .detail-overview { grid-template-columns: 68px minmax(0,1fr); }
   .detail-stats-row { grid-column: 1 / -1; }

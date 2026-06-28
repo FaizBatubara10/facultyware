@@ -10,9 +10,7 @@ const formatTimeValue = (timeValue) => {
   return String(timeValue).substring(0, 5);
 };
 
-// =========================================================================
-// RENDER UPLOAD MINUTES
-// =========================================================================
+
 
 const renderUploadMinutesForm = async (req, res, next) => {
   try {
@@ -91,9 +89,6 @@ const renderUploadMinutesForm = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// PROCESS UPLOAD MINUTES
-// =========================================================================
 
 const processUploadMinutes = async (req, res, next) => {
   try {
@@ -146,9 +141,7 @@ const processUploadMinutes = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// DELETE MINUTE
-// =========================================================================
+
 
 const deleteMinute = async (req, res, next) => {
   const minuteId = req.params.id;
@@ -180,9 +173,6 @@ const deleteMinute = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// REPLACE MINUTE — file notulensi OPSIONAL, dokumentasi bisa ditambah
-// =========================================================================
 
 const replaceMinute = async (req, res, next) => {
   const minuteId = req.params.id;
@@ -192,7 +182,7 @@ const replaceMinute = async (req, res, next) => {
     const notulensiFile = req.files?.file_notulensi?.[0];
     const dokumentasiFiles = req.files?.file_dokumentasi || [];
 
-    // ✅ FIX: Tidak wajib upload file notulensi — boleh hanya tambah dokumentasi
+    
     if (!notulensiFile && dokumentasiFiles.length === 0) {
       return res.status(400).send('Harap unggah file notulensi baru atau foto dokumentasi.');
     }
@@ -208,7 +198,7 @@ const replaceMinute = async (req, res, next) => {
     if (rows.length === 0) return res.status(404).send('Notulensi tidak ditemukan.');
     if (rows[0].organizer_id !== employeeId) return res.status(403).send('Anda tidak berhak mengganti notulensi ini.');
 
-    // Hanya ganti file notulensi jika ada file baru
+    
     if (notulensiFile) {
       const oldFilePath = rows[0].file;
 
@@ -224,7 +214,7 @@ const replaceMinute = async (req, res, next) => {
       );
     }
 
-    // Tambah dokumentasi baru jika ada
+    
     if (dokumentasiFiles.length > 0) {
       const meetingId = rows[0].meeting_id;
       for (const file of dokumentasiFiles) {
@@ -243,9 +233,7 @@ const replaceMinute = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// EXPORT MINUTE PDF
-// =========================================================================
+
 
 const exportMinutePdf = async (req, res, next) => {
   const minuteId = req.params.id;
@@ -354,7 +342,7 @@ const exportMinutePdf = async (req, res, next) => {
     doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.5).strokeColor(line).stroke();
     doc.moveDown(0.6);
 
-    // Ringkasan / Catatan
+    
     doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('RINGKASAN / CATATAN', 56);
     doc.moveDown(0.3);
     doc.font('Helvetica').fontSize(10);
@@ -402,7 +390,7 @@ const exportMinutePdf = async (req, res, next) => {
               .text('Tidak ada teks yang dapat diekstrak dari file Word ini.', 68);
           }
         } else if (['.jpg', '.jpeg', '.png'].includes(ext)) {
-          // ✅ FIX: Gunakan doc.y relatif, bukan koordinat absolut
+          
           const imgY = doc.y;
           doc.image(filePath, 68, imgY, { fit: [contentWidth - 12, 400], align: 'center' });
           doc.y = imgY + 410; // geser cursor setelah gambar
@@ -419,7 +407,7 @@ const exportMinutePdf = async (req, res, next) => {
       doc.font('Helvetica').fontSize(10).fillColor(gray).text('Tidak ada file terlampir.', 68);
     }
 
-    // ✅ FIX: Dokumentasi foto — layout rapi, 2 kolom, cursor digeser dengan benar
+    
     if (dokumentasiRows.length > 0) {
       doc.moveDown(1);
       doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.5).strokeColor(line).stroke();
@@ -428,9 +416,9 @@ const exportMinutePdf = async (req, res, next) => {
       doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('DOKUMENTASI FOTO RAPAT', 56);
       doc.moveDown(0.5);
 
-      const imgW = (contentWidth - 12) / 2;   // lebar tiap foto (2 kolom)
-      const imgH = 180;                         // tinggi tetap tiap foto
-      const gap  = 8;                           // jarak antar foto
+      const imgW = (contentWidth - 12) / 2;   
+      const imgH = 180;                         
+      const gap  = 8;                           
 
       for (let i = 0; i < dokumentasiRows.length; i++) {
         const dokRow = dokumentasiRows[i];
@@ -441,7 +429,7 @@ const exportMinutePdf = async (req, res, next) => {
         const col = i % 2;          // 0 = kiri, 1 = kanan
         const isNewRow = col === 0;
 
-        // Kalau baris baru, cek apakah masih muat di halaman
+        
         if (isNewRow) {
           if (doc.y + imgH + gap > 780) {
             doc.addPage();
@@ -450,7 +438,7 @@ const exportMinutePdf = async (req, res, next) => {
         }
 
         const xPos = col === 0 ? 68 : 68 + imgW + gap;
-        const yPos = isNewRow ? doc.y : doc.y; // posisi y tetap untuk baris yang sama
+        const yPos = isNewRow ? doc.y : doc.y; 
 
         try {
           doc.image(imgPath, xPos, yPos, { fit: [imgW, imgH], align: 'center', valign: 'center' });
@@ -460,7 +448,7 @@ const exportMinutePdf = async (req, res, next) => {
             .text(`[Gagal memuat: ${path.basename(imgPath)}]`, xPos, yPos);
         }
 
-        // Geser cursor ke bawah hanya setelah kolom kanan (atau foto terakhir di baris ganjil)
+        
         if (col === 1 || i === dokumentasiRows.length - 1) {
           doc.y = yPos + imgH + gap;
           doc.moveDown(0.3);
@@ -488,9 +476,6 @@ const exportMinutePdf = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// EXPORTS
-// =========================================================================
 
 module.exports = {
   renderUploadMinutesForm,

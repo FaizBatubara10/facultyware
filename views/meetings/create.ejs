@@ -1,11 +1,6 @@
 <%- include('../partials/header') %>
 
 <style>
-    /*
-        Halaman create meeting dibuat seperti modal besar.
-        Form ini tidak punya opsi "Sampai Selesai",
-        karena database asli mewajibkan end_time selalu terisi.
-    */
 
     body {
         overflow: hidden;
@@ -35,11 +30,7 @@
         background: #f4f1eb;
     }
 
-    /*
-        Background dibuat sebagai preview halaman daftar meeting.
-        Lapisan hitam transparan dipakai supaya tetap terlihat seperti modal,
-        tetapi daftar meeting di belakangnya masih kelihatan.
-    */
+    
     .create-bg-preview {
         position: absolute;
         inset: 0;
@@ -308,12 +299,7 @@
         min-height: 82px;
     }
 
-    /*
-        CUSTOM TIME PICKER
-
-        User memilih jam dan menit dari panel custom.
-        Waktu selesai wajib dipilih dan harus lebih besar dari waktu mulai.
-    */
+   
 
     .time-range-control {
         display: grid;
@@ -709,10 +695,7 @@
                             </div>
                         </div>
 
-                        <!--
-                            Input hidden ini yang dikirim ke controller.
-                            Database asli mewajibkan start_time dan end_time terisi.
-                        -->
+                        
                         <input type="hidden" id="start_time" name="start_time" value="09:00">
                         <input type="hidden" id="end_time" name="end_time" value="11:00">
                     </div>
@@ -890,9 +873,7 @@
 </div>
 
 <script>
-    // =========================================================
-    // PESERTA MEETING INTERNAL
-    // =========================================================
+    
 
     const selectedParticipants = [];
 
@@ -990,10 +971,7 @@
         });
     }
 
-    // =========================================================
-    // PESERTA EKSTERNAL
-    // =========================================================
-
+    
     const selectedExternalParticipants = [];
 
     function addExternalParticipant() {
@@ -1074,9 +1052,7 @@
         externalParticipantsInput.value = JSON.stringify(selectedExternalParticipants);
     }
 
-    // =========================================================
-    // CUSTOM TIME PICKER
-    // =========================================================
+    
 
     const timePickerState = {
         target: null,
@@ -1146,10 +1122,7 @@
             startTimeInput.value = timeValue;
             startDisplay.value = timeValue;
 
-            /*
-                Kalau waktu mulai diubah dan waktu selesai lama jadi tidak valid,
-                waktu selesai otomatis dibuat 1 jam setelah waktu mulai.
-            */
+            
             if (
                 endTimeInput.value &&
                 timeToMinutes(endTimeInput.value) <= timeToMinutes(timeValue)

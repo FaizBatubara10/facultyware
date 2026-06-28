@@ -18,7 +18,7 @@ router.get("/lupa-password", (req, res) => {
   res.render("lupa-password", { title: "Lupa Password" });
 });
 
-// Rute untuk menampilkan halaman Sign Up / Register
+
 router.get("/register", (req, res) => {
   res.render("register", { title: "Daftar Akun Baru", error: null });
 });

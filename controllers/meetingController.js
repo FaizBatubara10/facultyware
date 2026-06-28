@@ -186,12 +186,6 @@ const getMonthRange = (monthFilter) => {
   return { start: toSqlDate(startDate), end: toSqlDate(endDate) };
 };
 
-// =========================================================================
-// INDEX — Menampilkan daftar meeting + search + pagination
-// Hanya tampilkan:
-// - meeting yang dibuat sendiri (organizer)
-// - meeting dari orang lain yang sudah disetujui (status attended)
-// =========================================================================
 
 const index = async (req, res, next) => {
   try {
@@ -341,9 +335,7 @@ const index = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// CREATE — Menampilkan form tambah meeting
-// =========================================================================
+
 
 const create = async (req, res, next) => {
   try {
@@ -369,9 +361,7 @@ const create = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// STORE — Menyimpan meeting baru
-// =========================================================================
+
 
 const store = async (req, res, next) => {
   const {
@@ -423,9 +413,7 @@ const store = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// SHOW — Menampilkan detail meeting
-// =========================================================================
+
 
 const show = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -509,9 +497,7 @@ const show = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// EDIT — Menampilkan form edit meeting
-// =========================================================================
+
 
 const edit = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -569,9 +555,7 @@ const edit = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// UPDATE — Menyimpan perubahan meeting
-// =========================================================================
+
 
 const update = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -648,7 +632,6 @@ const update = async (req, res, next) => {
       );
     }
 
-    // Peserta eksternal: diff-based
     const [existingExternalRows] = await db.query(
       `SELECT id, name, email, institution FROM meeting_external_participants WHERE meeting_id = ?`,
       [meetingId]
@@ -686,9 +669,7 @@ const update = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// UPDATE ATTENDANCE — Mengubah status kehadiran peserta
-// =========================================================================
+
 
 const updateAttendance = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -751,9 +732,7 @@ const updateAttendance = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// DESTROY — Menghapus meeting
-// =========================================================================
+
 
 const destroy = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -768,9 +747,7 @@ const destroy = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// EXPORT ATTENDANCE EXCEL — Generate Excel daftar hadir peserta meeting
-// =========================================================================
+
 
 const exportAttendanceExcel = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -914,9 +891,7 @@ const exportAttendanceExcel = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// EXPORTS
-// =========================================================================
+
 
 module.exports = {
   index,

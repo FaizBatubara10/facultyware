@@ -1,11 +1,11 @@
 var createError = require('http-errors');
 
-// catch 404 and forward to error handler
+
 const notFoundHandler = (req, res, next) => {
   next(createError(404));
 };
 
-// error handler
+
 const errorHandler = (err, req, res, next) => {
   console.error('=== APP ERROR ===');
   console.error(err.stack || err.message || err);

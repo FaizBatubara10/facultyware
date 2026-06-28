@@ -28,7 +28,6 @@ async function init() {
     await ensureUserColumn('email', 'email VARCHAR(255) DEFAULT NULL');
     await ensureUserColumn('username', 'username VARCHAR(255) NOT NULL UNIQUE');
 
-    // Create employees table
     await db.query(`
       CREATE TABLE IF NOT EXISTS employees (
         id INT PRIMARY KEY,
@@ -42,7 +41,6 @@ async function init() {
     `);
     console.log('Employees table created or already exists.');
 
-    // Create meetings table
     await db.query(`
       CREATE TABLE IF NOT EXISTS meetings (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -67,7 +65,6 @@ async function init() {
     `);
     console.log('Meetings table created or already exists.');
 
-    // Create meeting participants table
     await db.query(`
       CREATE TABLE IF NOT EXISTS meeting_participants (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -83,7 +80,7 @@ async function init() {
     `);
     console.log('Meeting participants table created or already exists.');
 
-    // Create external participants table
+
     await db.query(`
       CREATE TABLE IF NOT EXISTS meeting_external_participants (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -99,7 +96,6 @@ async function init() {
     `);
     console.log('Meeting external participants table created or already exists.');
 
-    // Create meeting minutes table
     await db.query(`
       CREATE TABLE IF NOT EXISTS meeting_minutes (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -117,7 +113,6 @@ async function init() {
     `);
     console.log('Meeting minutes table created or already exists.');
 
-    // Create meeting documents table
     await db.query(`
       CREATE TABLE IF NOT EXISTS meeting_documents (
         id INT AUTO_INCREMENT PRIMARY KEY,
@@ -137,7 +132,6 @@ async function init() {
     `);
     console.log('Meeting documents table created or already exists.');
 
-    // Ensure admin user exists and has an employee row
     const [users] = await db.query('SELECT * FROM users WHERE username = ? LIMIT 1', ['admin']);
     let adminId;
 

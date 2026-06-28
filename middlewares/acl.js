@@ -25,7 +25,7 @@ const checkPermission = (requiredPermissions) => {
       : [requiredPermissions];
 
     try {
-      // Query to check if the user has a role that contains any of the required permissions
+      
       const query = `
         SELECT DISTINCT p.name 
         FROM permissions p
@@ -40,7 +40,7 @@ const checkPermission = (requiredPermissions) => {
         return next();
       }
 
-      // If no matching permission found, return Forbidden
+      
       res.status(403).render("error", {
         message: "Forbidden: You do not have permission to access this resource.",
         error: { status: 403, stack: "" }
