@@ -335,8 +335,6 @@ const index = async (req, res, next) => {
   }
 };
 
-
-
 const create = async (req, res, next) => {
   try {
     const currentEmployee = req.currentEmployee || await getCurrentEmployee(req.session.userId);
@@ -360,8 +358,6 @@ const create = async (req, res, next) => {
     next(err);
   }
 };
-
-
 
 const store = async (req, res, next) => {
   const {
@@ -412,8 +408,6 @@ const store = async (req, res, next) => {
     next(err);
   }
 };
-
-
 
 const show = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -497,8 +491,6 @@ const show = async (req, res, next) => {
   }
 };
 
-
-
 const edit = async (req, res, next) => {
   const meetingId = req.params.id;
 
@@ -554,8 +546,6 @@ const edit = async (req, res, next) => {
     next(err);
   }
 };
-
-
 
 const update = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -669,8 +659,6 @@ const update = async (req, res, next) => {
   }
 };
 
-
-
 const updateAttendance = async (req, res, next) => {
   const meetingId = req.params.id;
 
@@ -732,8 +720,6 @@ const updateAttendance = async (req, res, next) => {
   }
 };
 
-
-
 const destroy = async (req, res, next) => {
   const meetingId = req.params.id;
   try {
@@ -746,8 +732,6 @@ const destroy = async (req, res, next) => {
     next(err);
   }
 };
-
-
 
 const exportAttendanceExcel = async (req, res, next) => {
   const meetingId = req.params.id;
@@ -890,8 +874,6 @@ const exportAttendanceExcel = async (req, res, next) => {
     next(err);
   }
 };
-
-
 
 module.exports = {
   index,

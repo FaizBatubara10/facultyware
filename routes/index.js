@@ -4,7 +4,6 @@ var router = express.Router();
 const indexController = require("../controllers/indexController");
 const { isAuthenticated } = require("../middlewares/auth");
 
-/* GET home page. */
 router.get("/", indexController.index);
 
 router.get("/home", isAuthenticated, indexController.home);

@@ -418,10 +418,6 @@ const updateInvitationStatus = async (req, res, next) => {
   }
 };
 
-// =========================================================================
-// NOTULENSI
-// =========================================================================
-
 const buildMinutePayload = (row) => {
   return {
     id: row.id,
@@ -515,10 +511,6 @@ const showMinute = async (req, res, next) => {
     next(err);
   }
 };
-
-// =========================================================================
-// DASHBOARD
-// =========================================================================
 
 const dashboardStats = async (req, res, next) => {
   try {

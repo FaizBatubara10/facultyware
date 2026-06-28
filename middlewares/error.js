@@ -1,10 +1,8 @@
 var createError = require('http-errors');
 
-
 const notFoundHandler = (req, res, next) => {
   next(createError(404));
 };
-
 
 const errorHandler = (err, req, res, next) => {
   console.error('=== APP ERROR ===');

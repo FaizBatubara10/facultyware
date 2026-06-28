@@ -83,10 +83,6 @@ const canAccessMeeting = async (req, res, next) => {
   }
 };
 
-/*
-  isHost:
-  Edit, update, dan delete hanya boleh dilakukan host.
-*/
 const isHost = async (req, res, next) => {
   const meetingId = req.params.id;
 

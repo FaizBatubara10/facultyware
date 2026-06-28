@@ -10,8 +10,6 @@ const formatTimeValue = (timeValue) => {
   return String(timeValue).substring(0, 5);
 };
 
-
-
 const renderUploadMinutesForm = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
@@ -89,7 +87,6 @@ const renderUploadMinutesForm = async (req, res, next) => {
   }
 };
 
-
 const processUploadMinutes = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
@@ -141,8 +138,6 @@ const processUploadMinutes = async (req, res, next) => {
   }
 };
 
-
-
 const deleteMinute = async (req, res, next) => {
   const minuteId = req.params.id;
   const employeeId = req.session.employeeId;
@@ -172,7 +167,6 @@ const deleteMinute = async (req, res, next) => {
     next(err);
   }
 };
-
 
 const replaceMinute = async (req, res, next) => {
   const minuteId = req.params.id;
@@ -232,8 +226,6 @@ const replaceMinute = async (req, res, next) => {
     next(err);
   }
 };
-
-
 
 const exportMinutePdf = async (req, res, next) => {
   const minuteId = req.params.id;
@@ -475,7 +467,6 @@ const exportMinutePdf = async (req, res, next) => {
     next(err);
   }
 };
-
 
 module.exports = {
   renderUploadMinutesForm,

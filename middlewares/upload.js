@@ -1,12 +1,10 @@
 const multer = require('multer');
 const fs = require('fs');
 
-
 const uploadDir = './public/assets/uploads/';
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
-
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -18,7 +16,6 @@ const storage = multer.diskStorage({
   }
 });
 
-// Filter format file yang diizinkan
 const fileFilter = (req, file, cb) => {
   const allowedTypes = [
     'application/pdf',
@@ -33,7 +30,6 @@ const fileFilter = (req, file, cb) => {
     cb(new Error('Format file tidak didukung. Gunakan PDF, Word, JPG, atau PNG.'), false);
   }
 };
-
 
 const upload = multer({
   storage: storage,

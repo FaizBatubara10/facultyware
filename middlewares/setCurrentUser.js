@@ -1,6 +1,5 @@
 const db = require('../lib/db');
 
-
 const setCurrentUser = async (req, res, next) => {
   res.locals.currentUser = null;
 
