@@ -58,148 +58,163 @@
       name="description"
       content="A components library built with Tailwind CSS that works with any web stack."
     />
-    <meta name="title" content="Basecoat" />
-    <meta
-      name="keywords"
-      content="components,component library,component system,UI,UI kit,shadcn,shadcn/ui,Tailwind CSS,Tailwind,CSS,HTML,Jinja,Nunjucks,JS,JavaScript,vanilla JS,vanilla JavaScript"
-    />
 
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg" />
-    <link
-      rel="apple-touch-icon"
-      sizes="180x180"
-      href="/assets/apple-touch-icon.png"
-    />
-
     <link rel="stylesheet" href="/assets/styles.css" />
 
     <script src="/assets/js/basecoat.js?v=0.3.11" defer></script>
-    <script src="/assets/js/command.js?v=0.3.11" defer></script>
-    <script src="/assets/js/dropdown-menu.js?v=0.3.11" defer></script>
-    <script src="/assets/js/popover.js?v=0.3.11" defer></script>
-    <script src="/assets/js/select.js?v=0.3.11" defer></script>
-    <script src="/assets/js/sidebar.js?v=0.3.11" defer></script>
-    <script src="/assets/js/tabs.js?v=0.3.11" defer></script>
-    <script src="/assets/js/toast.js?v=0.3.11" defer></script>
-
     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/django.min.js"></script>
-    <script>
-      const highlight = () => {
-        if (!window.hljs) return;
-        document
-          .querySelectorAll(
-            "pre code:not([data-highlighted]), code.highlight:not([data-highlighted])",
-          )
-          .forEach((el) => hljs.highlightElement(el));
-      };
-
-      if (!window._hljsInit) {
-        window._hljsInit = true;
-        document.addEventListener("DOMContentLoaded", highlight);
-        document.addEventListener("htmx:afterSwap", highlight);
+    <style>
+      /* 1. Background gambar ditarik full layar */
+      .bg-full {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        z-index: 0;
       }
-    </script>
-    <script>
-      document.addEventListener("htmx:historyRestore", () => {
-        if (window.basecoat) window.basecoat.initAll();
-      });
-    </script>
+
+      /* 2. Overlay penuh: Transparan di kiri, perlahan memekat ke kanan */
+      .bg-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to right, transparent 0%, rgba(30, 106, 106, 0.92) 48%, rgba(30, 106, 106, 0.95) 52%);
+  transition: background 0.3s ease;
+}
+
+html.dark .bg-overlay {
+  background: linear-gradient(to right, transparent 0%, rgba(2, 44, 34, 0.93) 48%, rgba(2, 44, 34, 0.96) 52%);
+}
+
+      /* Wrapper utama konten */
+      .content-wrapper {
+        display: flex;
+        min-height: 100svh;
+        position: relative;
+        z-index: 2;
+      }
+
+      /* 3. STYLE KUSTOM UNTUK CARD KANAN (DI PERJELAS & ADAPTIF) */
+      .login-card {
+        width: 100%;
+        max-width: 22rem;
+        border-radius: 1rem;
+        overflow: hidden;
+        position: relative;
+        z-index: 10;
+        transition: all 0.3s ease;
+        
+        /* Light Mode */
+        background: #ffffff !important;
+        color: #111827 !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+      }
+
+      html.dark .login-card {
+        /* Dark Mode */
+        background: #0d1e1a !important; /* Hijau sangat gelap agar mewah dan kontras */
+        color: #f9fafb !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5) !important;
+      }
+
+      /* Memastikan slot internal card transparan meloloskan warna dari .login-card */
+      .login-card [data-slot="card"] {
+        background: transparent !important;
+        border: none !important;
+        color: inherit !important;
+      }
+
+      /* Penyesuaian elemen di dalam card berdasarkan mode */
+      .login-card label { color: #374151 !important; }
+      html.dark .login-card label { color: #e5e7eb !important; }
+
+      .login-card .text-muted-foreground { color: #6b7280 !important; }
+      html.dark .login-card .text-muted-foreground { color: #9ca3af !important; }
+
+      /* Warna input agar diperjelas saat diketik */
+      .login-card input {
+        background: #f9fafb !important;
+        color: #111827 !important;
+        border-color: #d1d5db !important;
+      }
+      html.dark .login-card input {
+        background: rgba(255, 255, 255, 0.04) !important;
+        color: #ffffff !important;
+        border-color: rgba(255, 255, 255, 0.15) !important;
+      }
+
+      /* Tombol hover & link signup */
+      .login-card a { color: #059669 !important; }
+      html.dark .login-card a { color: #34d399 !important; }
+    </style>
   </head>
-  <body
-    class="bg-background *:data-[slot=card]:has-[[data-slot=chart]]:shadow-none"
-  >
-    <%# Layout: 2 kolom full height — kiri foto, kanan panel hijau + form %>
-    <div style="display:flex; min-height:100svh;">
+  <body class="bg-background *:data-[slot=card]:has-[[data-slot=chart]]:shadow-none">
+    
+    <%# --- BACKGROUND PENUH --- %>
+    <img src="/assets/images/fti-building.png" alt="Gedung FTI Unand" class="bg-full" />
+    <div class="bg-overlay"></div>
 
-      <%# ── Kolom KIRI: branding utama, foto jadi background ── %>
-      <div style="flex:1; position:relative; overflow:hidden; min-height:100svh; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <%# --- KONTEN UTAMA --- %>
+    <div class="content-wrapper">
 
-        <%# Foto sebagai background %>
-        <img
-          src="/assets/images/fti-building.png"
-          alt="Gedung FTI Unand"
-          style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center;"
-        />
-
-        <%# Overlay — menyesuaikan mode %>
-        <div id="kiri-overlay" style="position:absolute; inset:0; transition:background 0.3s;"></div>
+      <%# ── Kolom KIRI (Branding) ── %>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; padding:0 2rem;">
+        
         <script>
           (function() {
-            const overlay = document.getElementById('kiri-overlay');
             const card = document.getElementById('kiri-card');
             const texts = document.querySelectorAll('.kiri-text');
             const subtext = document.querySelectorAll('.kiri-subtext');
-            if (!overlay) return;
             const apply = () => {
               const isDark = document.documentElement.classList.contains('dark');
-              overlay.style.background = isDark ? 'rgba(0,0,0,0.72)' : 'rgba(255,255,255,0.3)';
               if (card) {
-                card.style.background = isDark ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.75)';
+                card.style.background = isDark ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.75)';
                 card.style.borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.9)';
               }
               texts.forEach(el => { el.style.color = isDark ? '#fff' : '#064e3b'; });
-              subtext.forEach(el => { el.style.color = isDark ? 'rgba(255,255,255,0.6)' : '#374151'; });
+              subtext.forEach(el => { el.style.color = isDark ? 'rgba(255,255,255,0.7)' : '#374151'; });
             };
             apply();
             document.addEventListener('basecoat:theme', apply);
           })();
         </script>
 
-        <%# Konten branding di tengah — card horizontal %>
-<div id="kiri-card" style="position:relative; z-index:2; display:flex; flex-direction:row; align-items:center; gap:2rem; text-align:left; padding:2.5rem 2.75rem; margin:2rem; max-width:480px; width:calc(100% - 4rem); border-radius:1.5rem; background:rgba(0,0,0,0.18); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.08); box-shadow:0 4px 24px rgba(0,0,0,0.18); transition:background 0.3s, border-color 0.3s;">
+        <%# Konten branding FTI %>
+        <div id="kiri-card" style="position:relative; display:flex; flex-direction:row; align-items:center; gap:2rem; text-align:left; padding:2.5rem 2.75rem; margin:2rem; max-width:480px; width:100%; border-radius:1.5rem; backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.08); box-shadow:0 8px 32px rgba(0,0,0,0.15); transition:background 0.3s, border-color 0.3s;">
+          <div style="flex-shrink:0; width:100px; height:100px; border-radius:20px; background:rgba(255,255,255,0.1); border:1.5px solid rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center;">
+            <img src="/assets/images/fti-logo.png" alt="Logo FTI Unand" style="width:80px; height:80px; object-fit:contain;" />
+          </div>
+          <div>
+            <h1 class="kiri-text" style="margin:0 0 0.4rem; font-size:2rem; font-weight:900; letter-spacing:-0.02em; line-height:1.2; transition:color 0.3s;">FTI Meeting</h1>
+            <p style="margin:0 0 0.45rem; font-size:1.2rem; color:#6ee7b7; font-weight:700; white-space:nowrap;">Fakultas Teknologi Informasi</p>
+            <p class="kiri-subtext" style="margin:0 0 1.1rem; font-size:1rem; font-weight:600; line-height:1.7; transition:color 0.3s;">Platform manajemen rapat terpadu<br/>Universitas Andalas</p>
+            <div style="width:48px; height:3px; border-radius:99px; background:linear-gradient(90deg,#059669,#6ee7b7);"></div>
+          </div>
+        </div>
 
-  <%# Logo FTI %>
-  <div style="flex-shrink:0; width:100px; height:100px; border-radius:20px; background:rgba(255,255,255,0.08); border:1.5px solid rgba(255,255,255,0.15); display:flex; align-items:center; justify-content:center;">
-    <img
-      src="/assets/images/fti-logo.png"
-      alt="Logo FTI Unand"
-      style="width:80px; height:80px; object-fit:contain;"
-    />
-  </div>
-
-  <%# Teks branding %>
-<div>
-  <h1 class="kiri-text" style="margin:0 0 0.4rem; font-size:2rem; font-weight:900; color:#fff; letter-spacing:-0.02em; line-height:1.2; transition:color 0.3s;">FTI Meeting</h1>
-  <p style="margin:0 0 0.45rem; font-size:1.2rem; color:#6ee7b7; font-weight:700; white-space:nowrap;">Fakultas Teknologi Informasi</p>
-<p class="kiri-subtext" style="margin:0 0 1.1rem; font-size:1rem; font-weight:600; color:rgba(255, 255, 255, 0.75); line-height:1.7; transition:color 0.3s;">Platform manajemen rapat terpadu<br/>Universitas Andalas</p>
-  <div style="width:48px; height:3px; border-radius:99px; background:linear-gradient(90deg,#059669,#6ee7b7);"></div>
-</div>
-</div>
-
-        <%# Label bawah %>
-        <div style="position:absolute; bottom:1.5rem; left:0; right:0; text-align:center; z-index:2;">
-          <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.25); letter-spacing:0.08em; text-transform:uppercase;">Universitas Andalas · Padang</p>
+        <div style="position:absolute; bottom:1.5rem; left:0; right:0; text-align:center;">
+          <p style="margin:0; font-size:11px; color:rgba(255,255,255,0.4); letter-spacing:0.08em; text-transform:uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Universitas Andalas · Padang</p>
         </div>
       </div>
 
-      <%# ── Kolom KANAN: panel hijau emerald + card form ── %>
-      <div style="flex:1; background:#059669; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem 2rem; position:relative; overflow:hidden;">
+      <%# ── Kolom KANAN (Form Login) ── %>
+      <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:3rem 2rem; position:relative; overflow:hidden;">
 
-        <%# Dekorasi lingkaran transparan %>
-        <div style="position:absolute; bottom:-100px; right:-100px; width:350px; height:350px; border-radius:50%; background:rgba(255,255,255,0.06);"></div>
-        <div style="position:absolute; top:-80px; left:-80px; width:260px; height:260px; border-radius:50%; background:rgba(255,255,255,0.05);"></div>
-        <div style="position:absolute; bottom:60px; left:-40px; width:160px; height:160px; border-radius:50%; border:2px solid rgba(255,255,255,0.1);"></div>
-
-        <%# Card form login — struktur asli dipertahankan %>
-        <div style="width:100%; max-width:22rem; background:var(--card); color:var(--card-foreground); border-radius:1rem; box-shadow:0 8px 40px rgba(0,0,0,0.15); overflow:hidden; position:relative; z-index:1;">
-          <div
-            data-slot="card"
-            class="flex flex-col gap-6 rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden p-0"
-          >
+        <%# Card form login - Menggunakan class .login-card yang baru %>
+        <div class="login-card">
+          <div data-slot="card" class="flex flex-col gap-6 rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden p-0">
             <div data-slot="card-content" class="p-0">
               <form class="p-6 md:p-8" action="/login" method="POST">
-                <div
-                  data-slot="field-group"
-                  class="group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 [&amp;&gt;[data-slot=field-group]]:gap-4"
-                >
+                <div data-slot="field-group" class="group/field-group @container/field-group flex w-full flex-col gap-7 data-[slot=checkbox-group]:gap-3 [&amp;&gt;[data-slot=field-group]]:gap-4">
                   <div class="flex flex-col items-center gap-2 text-center">
                     <h1 class="text-2xl font-bold">Welcome back</h1>
-                    <p class="text-balance text-muted-foreground">
-                      Login to your account
-                    </p>
+                    <p class="text-balance text-muted-foreground">Login to your account</p>
                   </div>
 
                   <% if (error) { %>
@@ -208,75 +223,26 @@
                     </div>
                   <% } %>
 
-                  <div
-                    role="group"
-                    data-slot="field"
-                    data-orientation="vertical"
-                    class="group/field flex w-full gap-3 data-[invalid=true]:text-destructive flex-col [&amp;&gt;*]:w-full [&amp;&gt;.sr-only]:w-auto"
-                  >
-                    <label
-                      data-slot="field-label"
-                      class="items-center text-sm font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-[&gt;[data-slot=field]]:w-full has-[&gt;[data-slot=field]]:flex-col has-[&gt;[data-slot=field]]:rounded-md has-[&gt;[data-slot=field]]:border [&amp;&gt;*]:data-[slot=field]:p-4 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 dark:has-data-[state=checked]:bg-primary/10"
-                      for="username"
-                      >Username</label
-                    ><input
-                      type="text"
-                      name="username"
-                      data-slot="input"
-                      class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
-                      id="username"
-                      required=""
-                    />
+                  <div role="group" data-slot="field" data-orientation="vertical" class="group/field flex w-full gap-3 data-[invalid=true]:text-destructive flex-col [&amp;&gt;*]:w-full [&amp;&gt;.sr-only]:w-auto">
+                    <label data-slot="field-label" class="items-center text-sm font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-[&gt;[data-slot=field]]:w-full has-[&gt;[data-slot=field]]:flex-col has-[&gt;[data-slot=field]]:rounded-md has-[&gt;[data-slot=field]]:border [&amp;&gt;*]:data-[slot=field]:p-4 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 dark:has-data-[state=checked]:bg-primary/10" for="username">Username</label>
+                    <input type="text" name="username" data-slot="input" class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40" id="username" required="" />
                   </div>
-                  <div
-                    role="group"
-                    data-slot="field"
-                    data-orientation="vertical"
-                    class="group/field flex w-full gap-3 data-[invalid=true]:text-destructive flex-col [&amp;&gt;*]:w-full [&amp;&gt;.sr-only]:w-auto"
-                  >
+                  
+                  <div role="group" data-slot="field" data-orientation="vertical" class="group/field flex w-full gap-3 data-[invalid=true]:text-destructive flex-col [&amp;&gt;*]:w-full [&amp;&gt;.sr-only]:w-auto">
                     <div class="flex items-center">
-                      <label
-                        data-slot="field-label"
-                        class="items-center text-sm font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-[&gt;[data-slot=field]]:w-full has-[&gt;[data-slot=field]]:flex-col has-[&gt;[data-slot=field]]:rounded-md has-[&gt;[data-slot=field]]:border [&amp;&gt;*]:data-[slot=field]:p-4 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 dark:has-data-[state=checked]:bg-primary/10"
-                        for="password"
-                        >Password</label
-                      ><a
-                        href="#"
-                        onclick="tampilkanForm('lupa-password')"
-                        class="ml-auto text-sm underline-offset-2 hover:underline"
-                        >Forgot your password?</a
-                      >
+                      <label data-slot="field-label" class="items-center text-sm font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50 group/field-label peer/field-label flex w-fit gap-2 leading-snug group-data-[disabled=true]/field:opacity-50 has-[&gt;[data-slot=field]]:w-full has-[&gt;[data-slot=field]]:flex-col has-[&gt;[data-slot=field]]:rounded-md has-[&gt;[data-slot=field]]:border [&amp;&gt;*]:data-[slot=field]:p-4 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5 dark:has-data-[state=checked]:bg-primary/10" for="password">Password</label>
+                      <a href="#" onclick="tampilkanForm('lupa-password')" class="ml-auto text-sm underline-offset-2 hover:underline">Forgot your password?</a>
                     </div>
-                    <input
-                      type="password"
-                      name="password"
-                      data-slot="input"
-                      class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
-                      id="password"
-                      required=""
-                    />
+                    <input type="password" name="password" data-slot="input" class="h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none selection:bg-primary selection:text-primary-foreground file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40" id="password" required="" />
                   </div>
-                  <div
-                    role="group"
-                    data-slot="field"
-                    data-orientation="vertical"
-                    class="group/field flex w-full gap-3 data-[invalid=true]:text-destructive flex-col [&amp;&gt;*]:w-full [&amp;&gt;.sr-only]:w-auto"
-                  >
-                    <button
-                      data-slot="button"
-                      data-variant="default"
-                      data-size="default"
-                      class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*='size-'])]:size-4 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[&gt;svg]:px-3"
-                      type="submit"
-                    >
+
+                  <div role="group" data-slot="field" data-orientation="vertical" class="group/field flex w-full gap-3 data-[invalid=true]:text-destructive flex-col [&amp;&gt;*]:w-full [&amp;&gt;.sr-only]:w-auto">
+                    <button data-slot="button" data-variant="default" data-size="default" class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md text-sm font-medium whitespace-nowrap transition-all outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*='size-'])]:size-4 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2 has-[&gt;svg]:px-3" type="submit">
                       Login
                     </button>
                   </div>
 
-                  <p
-                    data-slot="field-description"
-                    class="text-sm leading-normal font-normal text-muted-foreground group-has-[[data-orientation=horizontal]]/field:text-balance last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&amp;]:-mt-1.5 [&amp;&gt;a]:underline [&amp;&gt;a]:underline-offset-4 [&amp;&gt;a:hover]:text-primary text-center"
-                  >
+                  <p data-slot="field-description" class="text-sm leading-normal font-normal text-muted-foreground group-has-[[data-orientation=horizontal]]/field:text-balance last:mt-0 nth-last-2:-mt-1 [[data-variant=legend]+&amp;]:-mt-1.5 [&amp;&gt;a]:underline [&amp;&gt;a]:underline-offset-4 [&amp;&gt;a:hover]:text-primary text-center">
                     Don't have an account? <a href="#" onclick="tampilkanForm('register')">Sign up</a>
                   </p>
                 </div>
@@ -285,17 +251,13 @@
           </div>
         </div>
 
-        <%# Terms di bawah card %>
-        <p style="margin-top:1.5rem; font-size:0.75rem; color:rgba(255,255,255,0.65); text-align:center; position:relative; z-index:1;">
+        <p style="margin-top:1.5rem; font-size:0.75rem; color:rgba(255,255,255,0.75); text-align:center; position:relative; z-index:10;">
           By clicking continue, you agree to our
-          <a href="#" style="color:rgba(255,255,255,0.85); text-decoration:underline;">Terms of Service</a>
-          and
-          <a href="#" style="color:rgba(255,255,255,0.85); text-decoration:underline;">Privacy Policy</a>.
+          <a href="#" style="color:#fff; text-decoration:underline;">Terms of Service</a> and
+          <a href="#" style="color:#fff; text-decoration:underline;">Privacy Policy</a>.
         </p>
 
       </div>
     </div>
-
-    <div id="toaster" class="toaster"></div>
   </body>
 </html>
