@@ -46,26 +46,28 @@ const home = async (req, res, next) => {
     );
 
     const [undanganTerbaru] = await db.query(
-      `SELECT mp.id AS participant_id, m.title, m.meeting_date
-       FROM meeting_participants mp
-       JOIN meetings m ON mp.meeting_id = m.id
-       WHERE mp.employee_id = ? AND mp.status = 'invited'
-         AND m.status NOT IN ('draft', 'cancelled')
-       ORDER BY m.meeting_date ASC LIMIT 3`,
-      [employeeId]
-    );
+  `SELECT mp.id AS participant_id, m.title, m.meeting_date
+   FROM meeting_participants mp
+   JOIN meetings m ON mp.meeting_id = m.id
+   WHERE mp.employee_id = ? AND mp.status = 'invited'
+     AND m.status NOT IN ('draft', 'cancelled')
+     AND NOT (m.meeting_date < CURDATE() AND mp.viewed_at IS NOT NULL)
+   ORDER BY m.meeting_date ASC LIMIT 3`,
+  [employeeId]
+);
 
     const [hasilPending] = await db.query(
-      `SELECT COUNT(*) AS total 
-       FROM meeting_participants mp
-       JOIN meetings m ON mp.meeting_id = m.id
-       WHERE mp.employee_id = ? AND mp.status = 'invited'
-         AND m.status NOT IN ('draft', 'cancelled')
-       `,
-      [employeeId]
-    );
-    const totalUndanganPending = hasilPending[0].total;
-
+  `SELECT COUNT(*) AS total 
+   FROM meeting_participants mp
+   JOIN meetings m ON mp.meeting_id = m.id
+   WHERE mp.employee_id = ? AND mp.status = 'invited'
+     AND m.status NOT IN ('draft', 'cancelled')
+     AND NOT (m.meeting_date < CURDATE() AND mp.viewed_at IS NOT NULL)
+   `,
+  [employeeId]
+);
+const totalUndanganPending = hasilPending[0].total;
+   
   
     const [hasilNotulenPending] = await db.query(
   `SELECT COUNT(*) AS total 

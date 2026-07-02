@@ -4,12 +4,16 @@
   :root{
     --fwd-emerald:#059669;  --fwd-emerald-soft:#ecfdf5;  --fwd-emerald-bd:#a7f3d0;
     --fwd-amber:#b45309;    --fwd-amber-soft:#fffbeb;    --fwd-amber-bd:#fde68a;
+    --fwd-red:#dc2626;      --fwd-red-soft:#fef2f2;      --fwd-red-bd:#fecaca;
+    --fwd-blue:#2563eb;     --fwd-blue-soft:#eff6ff;     --fwd-blue-bd:#bfdbfe;
     --fwd-shadow:0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
     --fwd-shadow-hover:0 12px 24px -8px rgba(0,0,0,.12);
   }
   .dark{
     --fwd-emerald:#34d399;  --fwd-emerald-soft:rgba(16,185,129,.12);  --fwd-emerald-bd:rgba(52,211,153,.3);
     --fwd-amber:#fbbf24;    --fwd-amber-soft:rgba(245,158,11,.14);    --fwd-amber-bd:rgba(251,191,36,.3);
+    --fwd-red:#f87171;      --fwd-red-soft:rgba(239,68,68,.14);       --fwd-red-bd:rgba(248,113,113,.3);
+    --fwd-blue:#60a5fa;     --fwd-blue-soft:rgba(59,130,246,.12);     --fwd-blue-bd:rgba(96,165,250,.3);
     --fwd-shadow:0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.24);
     --fwd-shadow-hover:0 16px 28px -10px rgba(0,0,0,.5);
   }
@@ -33,6 +37,22 @@
   .fwd-back-btn:hover{ background:var(--accent); transform:translateX(-2px); }
   .fwd-back-btn svg{ width:1rem; height:1rem; flex-shrink:0; }
 
+  /* Section heading */
+  .fwd-section-head{ display:flex; align-items:center; gap:.75rem; margin-bottom:1rem; }
+  .fwd-section-label{ font-size:1rem; font-weight:800; color:var(--foreground); margin:0; }
+  .fwd-section-count{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:1.5rem; height:1.5rem; padding:0 .45rem;
+    border-radius:9999px; font-size:.7rem; font-weight:800;
+    background:var(--fwd-amber-soft); color:var(--fwd-amber); border:1px solid var(--fwd-amber-bd);
+  }
+  .fwd-section-count.green{
+    background:var(--fwd-emerald-soft); color:var(--fwd-emerald); border-color:var(--fwd-emerald-bd);
+  }
+  .fwd-section-divider{ flex:1; height:1px; background:var(--border); }
+
+  .fwd-section-gap{ margin-bottom:2.5rem; }
+
   .fwd-inv-list{ display:flex; flex-direction:column; gap:1rem; }
   .fwd-inv-card{
     display:flex; align-items:center; justify-content:space-between; gap:1rem;
@@ -41,6 +61,8 @@
     transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease;
   }
   .fwd-inv-card:hover{ transform:translateY(-3px); box-shadow:var(--fwd-shadow-hover); border-color:var(--fwd-emerald-bd); }
+  .fwd-inv-card.is-responded{ opacity:.85; }
+  .fwd-inv-card.is-responded:hover{ opacity:1; }
 
   .fwd-inv-main{ display:flex; align-items:center; gap:1rem; min-width:0; flex:1; }
   @media(min-width:768px){ .fwd-inv-main{ gap:1.5rem; } }
@@ -49,16 +71,27 @@
     flex-shrink:0; min-width:70px; text-align:center; border-radius:.875rem; padding:.55rem .75rem;
     background:var(--fwd-emerald-soft); border:1px solid var(--fwd-emerald-bd);
   }
+  .fwd-inv-date.muted{
+    background:var(--muted); border-color:var(--border);
+  }
   .fwd-inv-month{ font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--fwd-emerald); }
+  .fwd-inv-date.muted .fwd-inv-month{ color:var(--muted-foreground); }
   .fwd-inv-day{ font-size:1.375rem; font-weight:900; color:var(--foreground); margin-top:.125rem; }
 
   .fwd-inv-body{ display:flex; flex-direction:column; gap:.375rem; min-width:0; }
+
+  /* Badge status */
   .fwd-inv-badge{
     display:inline-flex; align-items:center; gap:.375rem; width:max-content;
     padding:.2rem .65rem; border-radius:9999px; font-size:.65rem; font-weight:800;
     text-transform:uppercase; letter-spacing:.06em;
-    background:var(--fwd-amber-soft); color:var(--fwd-amber); border:1px solid var(--fwd-amber-bd);
   }
+  .fwd-inv-badge.pending{ background:var(--fwd-amber-soft); color:var(--fwd-amber); border:1px solid var(--fwd-amber-bd); }
+  .fwd-inv-badge.confirmed{ background:var(--fwd-emerald-soft); color:var(--fwd-emerald); border:1px solid var(--fwd-emerald-bd); }
+  .fwd-inv-badge.declined{ background:var(--fwd-red-soft); color:var(--fwd-red); border:1px solid var(--fwd-red-bd); }
+  .fwd-inv-badge.attended{ background:var(--fwd-blue-soft); color:var(--fwd-blue); border:1px solid var(--fwd-blue-bd); }
+  .fwd-inv-badge.absent{ background:var(--muted); color:var(--muted-foreground); border:1px solid var(--border); }
+
   .fwd-inv-pulse{ width:.4rem; height:.4rem; border-radius:9999px; background:var(--fwd-amber); flex-shrink:0; animation:fwd-pulse 2s ease-in-out infinite; }
   @keyframes fwd-pulse{ 0%,100%{opacity:1;} 50%{opacity:.35;} }
 
@@ -68,20 +101,21 @@
   .fwd-inv-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:1rem; font-size:.75rem; font-weight:600; color:var(--muted-foreground); }
   .fwd-inv-meta-item{ display:inline-flex; align-items:center; gap:.3rem; white-space:nowrap; }
   .fwd-inv-meta-item svg{ width:.85rem; height:.85rem; flex-shrink:0; color:var(--fwd-amber); }
+  .fwd-inv-meta-item.muted-icon svg{ color:var(--muted-foreground); }
   .fwd-inv-meta-item span{ text-transform:capitalize; }
 
   .fwd-inv-arrow{ width:1.25rem; height:1.25rem; color:var(--muted-foreground); flex-shrink:0; transition:color .2s ease; }
   .fwd-inv-card:hover .fwd-inv-arrow{ color:var(--fwd-emerald); }
 
   .fwd-empty-box{
-    text-align:center; padding:3rem 1.5rem; border-radius:1rem;
+    text-align:center; padding:2.5rem 1.5rem; border-radius:1rem;
     background:var(--card); border:1px dashed var(--border);
   }
   .fwd-empty-icon{
-    width:3.5rem; height:3.5rem; border-radius:9999px; margin:0 auto .75rem;
+    width:3rem; height:3rem; border-radius:9999px; margin:0 auto .75rem;
     background:var(--muted); display:flex; align-items:center; justify-content:center;
   }
-  .fwd-empty-icon svg{ width:1.75rem; height:1.75rem; color:var(--muted-foreground); }
+  .fwd-empty-icon svg{ width:1.5rem; height:1.5rem; color:var(--muted-foreground); }
   .fwd-empty-text{ font-size:.875rem; font-weight:500; color:var(--muted-foreground); margin:0; }
 </style>
 
@@ -91,7 +125,7 @@
     <div class="fwd-header">
       <div>
         <h1 class="fwd-title">Kotak Masuk</h1>
-        <p class="fwd-subtitle">Undangan rapat yang menunggu konfirmasi Anda</p>
+        <p class="fwd-subtitle">Kelola undangan rapat Anda</p>
       </div>
       <a href="/home" class="fwd-back-btn">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,58 +135,132 @@
       </a>
     </div>
 
-    <% if (undangan && undangan.length > 0) { %>
-      <div class="fwd-inv-list">
-        <% undangan.forEach(item => { %>
-          <a href="/invitations/<%= item.participant_id %>" class="fwd-inv-card">
+    <%# ── SECTION 1: Menunggu Konfirmasi ── %>
+    <div class="fwd-section-gap">
+      <div class="fwd-section-head">
+        <h2 class="fwd-section-label">Menunggu Konfirmasi</h2>
+        <span class="fwd-section-count"><%= undangan.length %></span>
+        <div class="fwd-section-divider"></div>
+      </div>
 
-            <div class="fwd-inv-main">
-              <div class="fwd-inv-date">
-                <div class="fwd-inv-month"><%= new Date(item.meeting_date).toLocaleString('id-ID', { month: 'short' }) %></div>
-                <div class="fwd-inv-day"><%= new Date(item.meeting_date).getDate() %></div>
-              </div>
-
-              <div class="fwd-inv-body">
-                <span class="fwd-inv-badge">
-                  <span class="fwd-inv-pulse"></span>
-                  Menunggu Konfirmasi
-                </span>
-                <h3 class="fwd-inv-title"><%= item.title %></h3>
-                <div class="fwd-inv-meta">
-                  <div class="fwd-inv-meta-item">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <%= item.start_time.substring(0, 5) %> - <%= item.end_time.substring(0, 5) %>
-                  </div>
-                  <div class="fwd-inv-meta-item">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    <span><%= item.meeting_type %></span>
+      <% if (undangan && undangan.length > 0) { %>
+        <div class="fwd-inv-list">
+          <% undangan.forEach(item => { %>
+            <a href="/invitations/<%= item.participant_id %>" class="fwd-inv-card">
+              <div class="fwd-inv-main">
+                <div class="fwd-inv-date">
+                  <div class="fwd-inv-month"><%= new Date(item.meeting_date).toLocaleString('id-ID', { month: 'short' }) %></div>
+                  <div class="fwd-inv-day"><%= new Date(item.meeting_date).getDate() %></div>
+                </div>
+                <div class="fwd-inv-body">
+                  <span class="fwd-inv-badge pending">
+                    <span class="fwd-inv-pulse"></span>
+                    Menunggu Konfirmasi
+                  </span>
+                  <h3 class="fwd-inv-title"><%= item.title %></h3>
+                  <div class="fwd-inv-meta">
+                    <div class="fwd-inv-meta-item">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <%= item.start_time.substring(0, 5) %> - <%= item.end_time.substring(0, 5) %>
+                    </div>
+                    <div class="fwd-inv-meta-item">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span><%= item.meeting_type %></span>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-
-            <svg class="fwd-inv-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-            </svg>
-          </a>
-        <% }) %>
-      </div>
-
-    <% } else { %>
-      <div class="fwd-empty-box">
-        <div class="fwd-empty-icon">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
+              <svg class="fwd-inv-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
+          <% }) %>
         </div>
-        <p class="fwd-empty-text">Tidak ada undangan yang menunggu konfirmasi.</p>
+      <% } else { %>
+        <div class="fwd-empty-box">
+          <div class="fwd-empty-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <p class="fwd-empty-text">Tidak ada undangan yang menunggu konfirmasi.</p>
+        </div>
+      <% } %>
+    </div>
+
+    <%# ── SECTION 2: Kotak Masuk Terbaru ── %>
+    <div>
+      <div class="fwd-section-head">
+        <h2 class="fwd-section-label">Terbaru</h2>
+        <span class="fwd-section-count green"><%= terbaru.length %></span>
+        <div class="fwd-section-divider"></div>
       </div>
-    <% } %>
+
+      <% if (terbaru && terbaru.length > 0) { %>
+        <div class="fwd-inv-list">
+          <%
+            const statusMap = {
+              confirmed: { text: 'Dikonfirmasi', cls: 'confirmed' },
+              declined:  { text: 'Ditolak',      cls: 'declined'  },
+              attended:  { text: 'Hadir',        cls: 'attended'  },
+              absent:    { text: 'Tidak Hadir',  cls: 'absent'    },
+            };
+          %>
+          <% terbaru.forEach(item => { %>
+            <%
+              const isPast = new Date(item.meeting_date) < new Date();
+              const badge = (item.status === 'invited' && isPast)
+                ? { text: 'Berakhir', cls: 'absent' }
+                : (statusMap[item.status] || { text: item.status, cls: 'absent' });
+            %>
+            <a href="/invitations/<%= item.participant_id %>" class="fwd-inv-card is-responded">
+              <div class="fwd-inv-main">
+                <div class="fwd-inv-date muted">
+                  <div class="fwd-inv-month"><%= new Date(item.meeting_date).toLocaleString('id-ID', { month: 'short' }) %></div>
+                  <div class="fwd-inv-day"><%= new Date(item.meeting_date).getDate() %></div>
+                </div>
+                <div class="fwd-inv-body">
+                  <span class="fwd-inv-badge <%= badge.cls %>"><%= badge.text %></span>
+                  <h3 class="fwd-inv-title"><%= item.title %></h3>
+                  <div class="fwd-inv-meta">
+                    <div class="fwd-inv-meta-item muted-icon">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <%= item.start_time.substring(0, 5) %> - <%= item.end_time.substring(0, 5) %>
+                    </div>
+                    <div class="fwd-inv-meta-item muted-icon">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      <span><%= item.meeting_type %></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <svg class="fwd-inv-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </a>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <div class="fwd-empty-box">
+          <div class="fwd-empty-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <p class="fwd-empty-text">Belum ada undangan yang direspons.</p>
+        </div>
+      <% } %>
+    </div>
 
   </div>
 </div>

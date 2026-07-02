@@ -5,11 +5,12 @@ const inbox = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
 
+    // Menunggu konfirmasi: belum berakhir ATAU belum dilihat
     const [undangan] = await db.query(
-      `
-      SELECT 
+      `SELECT 
         mp.id AS participant_id,
         mp.status,
+        mp.viewed_at,
         mp.created_at AS invited_at,
         m.id AS meeting_id,
         m.title,
@@ -24,8 +25,36 @@ const inbox = async (req, res, next) => {
       WHERE mp.employee_id = ?
         AND mp.status = 'invited'
         AND m.status NOT IN ('draft', 'cancelled')
-      ORDER BY m.meeting_date ASC, m.start_time ASC
-      `,
+        AND NOT (m.meeting_date < CURDATE() AND mp.viewed_at IS NOT NULL)
+      ORDER BY m.meeting_date ASC, m.start_time ASC`,
+      [employeeId]
+    );
+
+    // Terbaru: sudah direspons ATAU (sudah berakhir DAN sudah dilihat)
+    const [terbaru] = await db.query(
+      `SELECT 
+        mp.id AS participant_id,
+        mp.status,
+        mp.viewed_at,
+        mp.updated_at AS responded_at,
+        m.id AS meeting_id,
+        m.title,
+        m.meeting_date,
+        m.start_time,
+        m.end_time,
+        m.meeting_type,
+        m.online_platform,
+        m.online_link
+      FROM meeting_participants mp
+      JOIN meetings m ON mp.meeting_id = m.id
+      WHERE mp.employee_id = ?
+        AND m.status NOT IN ('draft', 'cancelled')
+        AND (
+          mp.status IN ('confirmed', 'declined', 'attended', 'absent')
+          OR (mp.status = 'invited' AND m.meeting_date < CURDATE() AND mp.viewed_at IS NOT NULL)
+        )
+      ORDER BY m.meeting_date DESC, m.start_time DESC
+      LIMIT 20`,
       [employeeId]
     );
 
@@ -33,24 +62,23 @@ const inbox = async (req, res, next) => {
       title: "Kotak Masuk Undangan",
       user: req.session.employeeName,
       undangan,
+      terbaru,
     });
   } catch (err) {
     next(err);
   }
 };
 
-
 const detail = async (req, res, next) => {
   try {
     const employeeId = req.session.employeeId;
     const participantId = req.params.participantId;
 
-   
     const [rows] = await db.query(
-      `
-      SELECT 
+      `SELECT 
         mp.id AS participant_id,
         mp.status,
+        mp.viewed_at,
         mp.created_at AS invited_at,
         m.id AS meeting_id,
         m.title,
@@ -66,8 +94,7 @@ const detail = async (req, res, next) => {
       JOIN meetings m ON mp.meeting_id = m.id
       WHERE mp.id = ?
         AND mp.employee_id = ?
-      LIMIT 1
-      `,
+      LIMIT 1`,
       [participantId, employeeId]
     );
 
@@ -80,7 +107,6 @@ const detail = async (req, res, next) => {
 
     const undangan = rows[0];
 
-    
     if (undangan.meeting_status === 'draft') {
       return res.status(403).render("error", {
         message: "Undangan ini belum dapat diakses karena rapat masih dalam status draft.",
@@ -88,18 +114,24 @@ const detail = async (req, res, next) => {
       });
     }
 
-    // Ambil semua peserta rapat yang sama
+    // Tandai sebagai sudah dilihat jika belum pernah dibuka
+    if (!undangan.viewed_at) {
+      await db.query(
+        `UPDATE meeting_participants SET viewed_at = NOW() WHERE id = ?`,
+        [participantId]
+      );
+      undangan.viewed_at = new Date();
+    }
+
     const [peserta] = await db.query(
-      `
-      SELECT 
+      `SELECT 
         e.name,
         e.employee_number,
         mp.status
       FROM meeting_participants mp
       JOIN employees e ON mp.employee_id = e.id
       WHERE mp.meeting_id = ?
-      ORDER BY e.name ASC
-      `,
+      ORDER BY e.name ASC`,
       [undangan.meeting_id]
     );
 

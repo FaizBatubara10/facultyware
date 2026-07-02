@@ -176,7 +176,6 @@ const replaceMinute = async (req, res, next) => {
     const notulensiFile = req.files?.file_notulensi?.[0];
     const dokumentasiFiles = req.files?.file_dokumentasi || [];
 
-    
     if (!notulensiFile && dokumentasiFiles.length === 0) {
       return res.status(400).send('Harap unggah file notulensi baru atau foto dokumentasi.');
     }
@@ -192,7 +191,6 @@ const replaceMinute = async (req, res, next) => {
     if (rows.length === 0) return res.status(404).send('Notulensi tidak ditemukan.');
     if (rows[0].organizer_id !== employeeId) return res.status(403).send('Anda tidak berhak mengganti notulensi ini.');
 
-    
     if (notulensiFile) {
       const oldFilePath = rows[0].file;
 
@@ -208,7 +206,6 @@ const replaceMinute = async (req, res, next) => {
       );
     }
 
-    
     if (dokumentasiFiles.length > 0) {
       const meetingId = rows[0].meeting_id;
       for (const file of dokumentasiFiles) {
@@ -260,33 +257,70 @@ const exportMinutePdf = async (req, res, next) => {
       [minute.meeting_id]
     );
 
-    const doc = new PDFDocument({ margin: 56, size: 'A4' });
+    // bufferPages: true -> supaya bisa "jalan-jalan" ke semua halaman di akhir
+    // untuk menggambar footer & nomor halaman secara konsisten
+    const doc = new PDFDocument({ margin: 56, size: 'A4', bufferPages: true });
 
     const safeName = minute.meeting_title.replace(/[^a-z0-9]/gi, '_');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="notulensi_${safeName}.pdf"`);
     doc.pipe(res);
 
-    const contentWidth = 595 - 56 * 2;
+    const pageWidth = 595;
+    const pageHeight = 842; // tinggi A4 dalam pt
+    const contentWidth = pageWidth - 56 * 2;
     const gray = '#6b7280';
     const dark = '#111827';
     const green = '#065f46';
     const line = '#e5e7eb';
+    const BOTTOM_LIMIT = pageHeight - 70; // batas aman sebelum footer
 
-    // Header
-    doc.rect(0, 0, 595, 6).fill(green);
-    doc.moveDown(0.5);
-    doc.fontSize(22).font('Helvetica-Bold').fillColor(dark).text('NOTULENSI RAPAT', { align: 'center' });
-    doc.fontSize(10).font('Helvetica').fillColor(gray).text('FTI Meeting System', { align: 'center' });
+    // Helper: pindah halaman otomatis kalau ruang tersisa kurang dari minHeight
+    function ensureSpace(minHeight) {
+      if (doc.y + minHeight > BOTTOM_LIMIT) {
+        doc.addPage();
+      }
+    }
+
+    // ================= HEADER / KOP SURAT (halaman pertama saja) =================
+    const logoFtiPath = path.join(__dirname, '..', 'public', 'images', 'fti-logo.png');
+    const logoUnandPath = path.join(__dirname, '..', 'public', 'images', 'Logo Unand.png');
+    const headerTop = 40;
+
+    if (fs.existsSync(logoFtiPath)) {
+      doc.image(logoFtiPath, 56, headerTop, { width: 42, height: 42 });
+    }
+    if (fs.existsSync(logoUnandPath)) {
+      doc.image(logoUnandPath, pageWidth - 56 - 42, headerTop, { width: 42, height: 42 });
+    }
+
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(dark)
+      .text('KEMENTERIAN PENDIDIKAN TINGGI, SAINS,', 100, headerTop, { width: pageWidth - 200, align: 'center' });
+    doc.font('Helvetica-Bold').fontSize(11).fillColor(dark)
+      .text('DAN TEKNOLOGI', 100, doc.y, { width: pageWidth - 200, align: 'center' });
+    doc.font('Helvetica-Bold').fontSize(14).fillColor(green)
+      .text('UNIVERSITAS ANDALAS', 100, doc.y + 2, { width: pageWidth - 200, align: 'center' });
+
+    doc.font('Helvetica').fontSize(7.5).fillColor(gray)
+      .text('Telepon: 0751-71181, 71173, 71086, 71087, 71089  Faksimile: 0751-71085', 100, doc.y + 3, { width: pageWidth - 200, align: 'center' });
+    doc.font('Helvetica').fontSize(7.5).fillColor(gray)
+      .text('Laman: http://www.unand.ac.id   e-mail: editor@unand.ac.id', 100, doc.y, { width: pageWidth - 200, align: 'center' });
+
     doc.moveDown(0.6);
-    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(1.5).strokeColor(green).stroke();
-    doc.moveDown(0.8);
 
-    // Informasi Rapat
+    const lineY = doc.y;
+    doc.moveTo(40, lineY).lineTo(pageWidth - 40, lineY).lineWidth(2.5).strokeColor(green).stroke();
+    doc.moveTo(40, lineY + 4).lineTo(pageWidth - 40, lineY + 4).lineWidth(0.75).strokeColor(green).stroke();
+
+    doc.y = lineY + 14;
+    doc.moveDown(0.5);
+
+    // ================= INFORMASI RAPAT =================
     const meetingDate = new Date(minute.meeting_date).toLocaleDateString('id-ID', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
 
+    ensureSpace(60);
     doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('INFORMASI RAPAT', 56);
     doc.moveDown(0.3);
 
@@ -298,10 +332,11 @@ const exportMinutePdf = async (req, res, next) => {
       ['Status', minute.status.charAt(0).toUpperCase() + minute.status.slice(1)]
     ];
 
-    const boxY = doc.y;
     const rowHeight = 20;
     const boxHeight = infoRows.length * rowHeight + 16;
+    ensureSpace(boxHeight + 10);
 
+    const boxY = doc.y;
     doc.rect(56, boxY, contentWidth, boxHeight).fillAndStroke('#f9fafb', line);
 
     let rowY = boxY + 10;
@@ -316,13 +351,15 @@ const exportMinutePdf = async (req, res, next) => {
     doc.y = boxY + boxHeight + 14;
     doc.moveDown(0.2);
 
-    // Daftar Peserta
+    // ================= DAFTAR PESERTA =================
+    ensureSpace(60);
     doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('DAFTAR PESERTA', 56);
     doc.moveDown(0.3);
     doc.font('Helvetica').fontSize(10).fillColor(dark);
 
     if (participants.length > 0) {
       participants.forEach((participant, index) => {
+        ensureSpace(20);
         const empNum = participant.employee_number ? `  (${participant.employee_number})` : '';
         doc.text(`${index + 1}.  ${participant.name}${empNum}`, 68, doc.y, { lineGap: 3 });
       });
@@ -331,10 +368,12 @@ const exportMinutePdf = async (req, res, next) => {
     }
 
     doc.moveDown(0.8);
+    ensureSpace(20);
     doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.5).strokeColor(line).stroke();
     doc.moveDown(0.6);
 
-    
+    // ================= RINGKASAN / CATATAN =================
+    ensureSpace(60);
     doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('RINGKASAN / CATATAN', 56);
     doc.moveDown(0.3);
     doc.font('Helvetica').fontSize(10);
@@ -346,12 +385,16 @@ const exportMinutePdf = async (req, res, next) => {
     }
 
     doc.moveDown(0.8);
+    ensureSpace(20);
     doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.5).strokeColor(line).stroke();
     doc.moveDown(0.6);
 
-    // Isi File Notulensi
+    // ================= ISI FILE NOTULENSI =================
+    ensureSpace(60);
     doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('ISI FILE NOTULENSI', 56);
     doc.moveDown(0.3);
+
+    const MAX_CHARS = 2500;
 
     if (minute.file) {
       const filePath = path.join(__dirname, '..', 'public', minute.file.replace(/^\//, ''));
@@ -361,31 +404,55 @@ const exportMinutePdf = async (req, res, next) => {
         if (ext === '.pdf') {
           const fileBuffer = fs.readFileSync(filePath);
           const pdfData = await (pdfParse.default ? pdfParse.default(fileBuffer) : pdfParse(fileBuffer));
-          const extractedText = (pdfData?.text || '').trim();
+          let extractedText = (pdfData?.text || '').trim();
 
           if (extractedText) {
+            let truncated = false;
+            if (extractedText.length > MAX_CHARS) {
+              extractedText = extractedText.slice(0, MAX_CHARS);
+              truncated = true;
+            }
+
             doc.font('Helvetica').fontSize(9.5).fillColor(dark)
               .text(extractedText, 68, doc.y, { lineGap: 3, paragraphGap: 5, width: contentWidth - 12 });
+
+            if (truncated) {
+              doc.moveDown(0.3);
+              doc.font('Helvetica-Oblique').fontSize(8.5).fillColor(gray)
+                .text('Teks dipotong. Tata letak asli (tabel/kolom) mungkin tidak sepenuhnya tampil di sini — silakan lihat file asli untuk detail lengkap.', 68, doc.y, { width: contentWidth - 12 });
+            }
           } else {
             doc.font('Helvetica').fontSize(10).fillColor(gray)
               .text('Tidak ada teks yang dapat diekstrak dari file PDF ini.', 68);
           }
         } else if (ext === '.docx' || ext === '.doc') {
           const result = await mammoth.extractRawText({ path: filePath });
-          const extractedText = result.value.trim();
+          let extractedText = result.value.trim();
 
           if (extractedText) {
+            let truncated = false;
+            if (extractedText.length > MAX_CHARS) {
+              extractedText = extractedText.slice(0, MAX_CHARS);
+              truncated = true;
+            }
+
             doc.font('Helvetica').fontSize(9.5).fillColor(dark)
               .text(extractedText, 68, doc.y, { lineGap: 3, paragraphGap: 5, width: contentWidth - 12 });
+
+            if (truncated) {
+              doc.moveDown(0.3);
+              doc.font('Helvetica-Oblique').fontSize(8.5).fillColor(gray)
+                .text('Teks dipotong. Tata letak asli (tabel/kolom) mungkin tidak sepenuhnya tampil di sini — silakan lihat file asli untuk detail lengkap.', 68, doc.y, { width: contentWidth - 12 });
+            }
           } else {
             doc.font('Helvetica').fontSize(10).fillColor(gray)
               .text('Tidak ada teks yang dapat diekstrak dari file Word ini.', 68);
           }
         } else if (['.jpg', '.jpeg', '.png'].includes(ext)) {
-          
+          ensureSpace(410);
           const imgY = doc.y;
           doc.image(filePath, 68, imgY, { fit: [contentWidth - 12, 400], align: 'center' });
-          doc.y = imgY + 410; // geser cursor setelah gambar
+          doc.y = imgY + 410;
         } else {
           doc.font('Helvetica').fontSize(10).fillColor(gray)
             .text('Format file tidak didukung untuk ditampilkan.', 68);
@@ -399,48 +466,56 @@ const exportMinutePdf = async (req, res, next) => {
       doc.font('Helvetica').fontSize(10).fillColor(gray).text('Tidak ada file terlampir.', 68);
     }
 
-    
+    // ================= DOKUMENTASI FOTO RAPAT =================
     if (dokumentasiRows.length > 0) {
       doc.moveDown(1);
+      ensureSpace(20);
       doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(0.5).strokeColor(line).stroke();
       doc.moveDown(0.6);
 
+      ensureSpace(60);
       doc.fontSize(11).font('Helvetica-Bold').fillColor(green).text('DOKUMENTASI FOTO RAPAT', 56);
       doc.moveDown(0.5);
 
-      const imgW = (contentWidth - 12) / 2;   
-      const imgH = 180;                         
-      const gap  = 8;                           
+      const imgW = (contentWidth - 12) / 2;
+      const imgH = 180;
+      const gap = 8;
+      const imageExts = ['.jpg', '.jpeg', '.png'];
 
       for (let i = 0; i < dokumentasiRows.length; i++) {
         const dokRow = dokumentasiRows[i];
         const imgPath = path.join(__dirname, '..', 'public', dokRow.file_path.replace(/^\//, ''));
+        const dokExt = path.extname(dokRow.file_path).toLowerCase();
 
         if (!fs.existsSync(imgPath)) continue;
 
-        const col = i % 2;          // 0 = kiri, 1 = kanan
+        const col = i % 2; // 0 = kiri, 1 = kanan
         const isNewRow = col === 0;
 
-        
-        if (isNewRow) {
-          if (doc.y + imgH + gap > 780) {
-            doc.addPage();
-            doc.moveDown(0.5);
-          }
+        if (isNewRow && doc.y + imgH + gap > BOTTOM_LIMIT) {
+          doc.addPage();
         }
 
         const xPos = col === 0 ? 68 : 68 + imgW + gap;
-        const yPos = isNewRow ? doc.y : doc.y; 
+        const yPos = doc.y;
 
-        try {
-          doc.image(imgPath, xPos, yPos, { fit: [imgW, imgH], align: 'center', valign: 'center' });
-        } catch (imgErr) {
-          console.error('Gagal memuat foto dokumentasi:', imgErr.message);
+        if (imageExts.includes(dokExt)) {
+          try {
+            doc.image(imgPath, xPos, yPos, { fit: [imgW, imgH], align: 'center', valign: 'center' });
+          } catch (imgErr) {
+            console.error('Gagal memuat foto dokumentasi:', imgErr.message);
+            doc.rect(xPos, yPos, imgW, imgH).stroke(line);
+            doc.font('Helvetica').fontSize(9).fillColor(gray)
+              .text('Gagal memuat gambar', xPos + 8, yPos + imgH / 2 - 6, { width: imgW - 16 });
+          }
+        } else {
+          // Bukan gambar (misal PDF/dokumen lain) -> tampilkan sebagai kotak keterangan file
+          doc.rect(xPos, yPos, imgW, imgH).fillAndStroke('#f9fafb', line);
           doc.font('Helvetica').fontSize(9).fillColor(gray)
-            .text(`[Gagal memuat: ${path.basename(imgPath)}]`, xPos, yPos);
+            .text('Lampiran dokumen', xPos + 10, yPos + imgH / 2 - 14, { width: imgW - 20 })
+            .text(path.basename(dokRow.file_path), xPos + 10, yPos + imgH / 2, { width: imgW - 20 });
         }
 
-        
         if (col === 1 || i === dokumentasiRows.length - 1) {
           doc.y = yPos + imgH + gap;
           doc.moveDown(0.3);
@@ -448,20 +523,31 @@ const exportMinutePdf = async (req, res, next) => {
       }
     }
 
-    doc.moveDown(2);
-
-    // Footer
+    // ================= FOOTER & NOMOR HALAMAN (SEMUA HALAMAN) =================
+    const range = doc.bufferedPageRange();
     const uploadedAt = new Date(minute.created_at).toLocaleDateString('id-ID', {
       year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     });
 
-    doc.moveTo(56, doc.y).lineTo(539, doc.y).lineWidth(1).strokeColor(green).stroke();
-    doc.moveDown(0.4);
-    doc.fontSize(8).fillColor(gray)
-      .text(`Diunggah pada: ${uploadedAt}`, 56, doc.y, { align: 'left', continued: true })
-      .text('FTI Meeting System', { align: 'right' });
+    for (let i = range.start; i < range.start + range.count; i++) {
+      doc.switchToPage(i);
 
-    doc.rect(0, 830, 595, 6).fill(green);
+      // garis tipis di atas untuk halaman ke-2 dst (kop surat lengkap hanya di halaman 1)
+      if (i !== range.start) {
+        doc.moveTo(40, 20).lineTo(pageWidth - 40, 20).lineWidth(0.75).strokeColor(green).stroke();
+      }
+
+      // garis hijau + info di footer setiap halaman
+      doc.moveTo(56, pageHeight - 50).lineTo(pageWidth - 56, pageHeight - 50).lineWidth(1).strokeColor(green).stroke();
+
+      doc.fontSize(8).fillColor(gray)
+        .text(`Diunggah pada: ${uploadedAt}`, 56, pageHeight - 40, { width: 300, align: 'left' });
+      doc.fontSize(8).fillColor(gray)
+        .text(`Halaman ${i - range.start + 1} dari ${range.count}`, 56, pageHeight - 40, { width: contentWidth, align: 'right' });
+
+      doc.rect(0, pageHeight - 6, pageWidth, 6).fill(green);
+    }
+
     doc.end();
   } catch (err) {
     next(err);
